@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Claude Code — Best Practices Guide</title>
+  <meta name="description" content="Complete reference guide for Claude Code best practices: CLAUDE.md, skills, subagents, hooks, MCP servers, rules, and memory system.">
   <style>
     :root {
       --bg: #fafafa;
@@ -64,13 +65,13 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Layout ── */
+    /* -- Layout -- */
     .layout {
       display: flex;
       min-height: 100vh;
     }
 
-    /* ── Sidebar ── */
+    /* -- Sidebar -- */
     .sidebar {
       position: fixed;
       top: 0; left: 0;
@@ -161,9 +162,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
     }
 
-    .theme-toggle {
+    .theme-toggle, .lang-toggle {
       background: var(--code-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
@@ -172,11 +174,18 @@
       font-size: 13px;
       color: var(--text-secondary);
       transition: all 0.15s ease;
+      font-family: inherit;
+      white-space: nowrap;
     }
 
-    .theme-toggle:hover {
+    .theme-toggle:hover, .lang-toggle:hover {
       background: var(--sidebar-hover);
       color: var(--text);
+    }
+
+    .lang-toggle {
+      font-weight: 600;
+      letter-spacing: 0.3px;
     }
 
     .mobile-toggle {
@@ -194,7 +203,7 @@
       box-shadow: var(--shadow-md);
     }
 
-    /* ── Main ── */
+    /* -- Main -- */
     .main {
       flex: 1;
       margin-left: 280px;
@@ -202,7 +211,7 @@
       padding: 48px 56px 120px;
     }
 
-    /* ── Hero ── */
+    /* -- Hero -- */
     .hero {
       margin-bottom: 56px;
       padding-bottom: 40px;
@@ -246,7 +255,7 @@
     .tag.purple { background: var(--tag-purple-bg); color: var(--tag-purple-text); }
     .tag.amber { background: var(--accent-light); color: var(--accent); }
 
-    /* ── Sections ── */
+    /* -- Sections -- */
     .section {
       margin-bottom: 56px;
       scroll-margin-top: 32px;
@@ -284,7 +293,7 @@
 
     p { margin-bottom: 14px; }
 
-    /* ── Cards ── */
+    /* -- Cards -- */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -324,7 +333,7 @@
       color: var(--text-secondary);
     }
 
-    /* ── Code ── */
+    /* -- Code -- */
     pre {
       background: var(--code-bg);
       border: 1px solid var(--border);
@@ -349,7 +358,7 @@
       border: 1px solid var(--border);
     }
 
-    /* ── Tables ── */
+    /* -- Tables -- */
     .table-wrap {
       overflow-x: auto;
       margin: 14px 0;
@@ -383,7 +392,7 @@
 
     tr:last-child td { border-bottom: none; }
 
-    /* ── Tree ── */
+    /* -- Tree -- */
     pre.tree {
       background: var(--code-bg);
       border: 1px solid var(--border);
@@ -400,7 +409,7 @@
     .tree .hl { color: var(--accent); font-weight: 600; }
     .tree .dim { color: var(--text-secondary); }
 
-    /* ── Callout ── */
+    /* -- Callout -- */
     .callout {
       border-left: 3px solid var(--accent);
       background: var(--accent-light);
@@ -419,7 +428,7 @@
 
     .callout-info strong { color: #3b82f6; }
 
-    /* ── Grid ── */
+    /* -- Grid -- */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -454,7 +463,7 @@
       line-height: 1.5;
     }
 
-    /* ── Do/Don't ── */
+    /* -- Do/Don't -- */
     .do-dont {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -498,7 +507,7 @@
     }
 
     .do-box li::before {
-      content: "✓";
+      content: "\2713";
       position: absolute;
       left: 0;
       color: #16a34a;
@@ -506,14 +515,14 @@
     }
 
     .dont-box li::before {
-      content: "✗";
+      content: "\2717";
       position: absolute;
       left: 0;
       color: #dc2626;
       font-weight: 700;
     }
 
-    /* ── Checklist ── */
+    /* -- Checklist -- */
     .checklist {
       list-style: none;
       padding: 0;
@@ -539,7 +548,7 @@
       border-radius: 4px;
     }
 
-    /* ── Steps ── */
+    /* -- Steps -- */
     .steps { margin: 16px 0; counter-reset: step-counter; }
 
     .step {
@@ -579,7 +588,7 @@
       color: var(--text-secondary);
     }
 
-    /* ── Responsive ── */
+    /* -- Responsive -- */
     @media (max-width: 1024px) {
       .main { padding: 40px 32px 100px; }
     }
@@ -593,13 +602,13 @@
       .grid-2, .grid-3, .do-dont { grid-template-columns: 1fr; }
     }
 
-    /* ── Scrollbar ── */
+    /* -- Scrollbar -- */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-    /* ── Accordion ── */
+    /* -- Accordion -- */
     details {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -620,7 +629,7 @@
     }
 
     details summary::before {
-      content: "▸";
+      content: "\25B8";
       font-size: 12px;
       transition: transform 0.2s ease;
       color: var(--text-secondary);
@@ -632,7 +641,7 @@
 
     details .details-content { padding: 0 18px 18px; }
 
-    /* ── Smooth anchors ── */
+    /* -- Smooth anchors -- */
     .section[id] { scroll-margin-top: 32px; }
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -643,36 +652,39 @@
   <button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle menu">&#9776;</button>
 
   <div class="layout">
-    <!-- ── Sidebar ── -->
+    <!-- -- Sidebar -- -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo">Claude <span>Code</span></div>
-        <div class="subtitle">Best Practices Guide</div>
+        <div class="subtitle" data-i18n="subtitle">Best Practices Guide</div>
       </div>
       <nav id="nav">
-        <a href="#structure" class="active"><span class="nav-num">1</span> Project Structure</a>
-        <a href="#claude-md"><span class="nav-num">2</span> CLAUDE.md</a>
-        <a href="#settings"><span class="nav-num">3</span> Settings</a>
-        <a href="#skills"><span class="nav-num">4</span> Skills</a>
-        <a href="#subagents"><span class="nav-num">5</span> Subagents</a>
-        <a href="#hooks"><span class="nav-num">6</span> Hooks</a>
-        <a href="#mcp"><span class="nav-num">7</span> MCP Servers</a>
-        <a href="#rules"><span class="nav-num">8</span> Rules</a>
-        <a href="#memory"><span class="nav-num">9</span> Memory</a>
-        <a href="#checklist"><span class="nav-num">10</span> Checklist</a>
+        <a href="#structure" class="active"><span class="nav-num">1</span> <span data-i18n="nav_structure">Project Structure</span></a>
+        <a href="#claude-md"><span class="nav-num">2</span> <span data-i18n="nav_claudemd">CLAUDE.md</span></a>
+        <a href="#settings"><span class="nav-num">3</span> <span data-i18n="nav_settings">Settings</span></a>
+        <a href="#skills"><span class="nav-num">4</span> <span data-i18n="nav_skills">Skills</span></a>
+        <a href="#subagents"><span class="nav-num">5</span> <span data-i18n="nav_subagents">Subagents</span></a>
+        <a href="#hooks"><span class="nav-num">6</span> <span data-i18n="nav_hooks">Hooks</span></a>
+        <a href="#mcp"><span class="nav-num">7</span> <span data-i18n="nav_mcp">MCP Servers</span></a>
+        <a href="#rules"><span class="nav-num">8</span> <span data-i18n="nav_rules">Rules</span></a>
+        <a href="#memory"><span class="nav-num">9</span> <span data-i18n="nav_memory">Memory</span></a>
+        <a href="#checklist"><span class="nav-num">10</span> <span data-i18n="nav_checklist">Checklist</span></a>
       </nav>
       <div class="sidebar-footer">
         <span style="font-size:12px;color:var(--text-secondary)">v1.0</span>
-        <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+        <div style="display:flex;gap:6px">
+          <button class="lang-toggle" onclick="toggleLang()" id="langBtn">SRB</button>
+          <button class="theme-toggle" onclick="toggleTheme()" data-i18n="theme_toggle">Toggle Theme</button>
+        </div>
       </div>
     </aside>
 
-    <!-- ── Main Content ── -->
+    <!-- -- Main Content -- -->
     <main class="main">
       <!-- Hero -->
       <header class="hero">
-        <h1>Claude Code<br><span>Best Practices</span></h1>
-        <p>Everything you need to set up your <code>.claude/</code> folder, write effective instructions, create skills &amp; subagents, and structure your project for optimal results.</p>
+        <h1>Claude Code<br><span data-i18n="hero_title">Best Practices</span></h1>
+        <p data-i18n="hero_desc">Everything you need to set up your <code>.claude/</code> folder, write effective instructions, create skills &amp; subagents, and structure your project for optimal results.</p>
         <div class="hero-tags">
           <span class="tag">CLAUDE.md</span>
           <span class="tag blue">Skills</span>
@@ -683,11 +695,11 @@
         </div>
       </header>
 
-      <!-- ═══════════════ 1. Project Structure ═══════════════ -->
+      <!-- 1. Project Structure -->
       <section class="section" id="structure">
-        <div class="section-label">Section 1</div>
-        <h2>Project Structure</h2>
-        <p>A well-organized <code>.claude/</code> directory is the foundation of effective Claude Code usage. Here's the recommended layout:</p>
+        <div class="section-label" data-i18n="section_1">Section 1</div>
+        <h2 data-i18n="s1_title">Project Structure</h2>
+        <p data-i18n="s1_desc">A well-organized <code>.claude/</code> directory is the foundation of effective Claude Code usage. Here's the recommended layout:</p>
 
         <pre class="tree"><span class="hl">your-project/</span>
 ├── <span class="hl">CLAUDE.md</span>                        <span class="dim"># Project instructions</span>
@@ -712,8 +724,8 @@
 ├── tests/
 └── .gitignore</pre>
 
-        <h3>User-Level Configuration</h3>
-        <p>Global settings that apply to all your projects live in <code>~/.claude/</code>:</p>
+        <h3 data-i18n="s1_user_config">User-Level Configuration</h3>
+        <p data-i18n="s1_user_config_desc">Global settings that apply to all your projects live in <code>~/.claude/</code>:</p>
         <pre class="tree"><span class="hl">~/.claude/</span>
 ├── CLAUDE.md              <span class="dim"># Personal instructions (all projects)</span>
 ├── settings.json          <span class="dim"># Global user settings</span>
@@ -726,57 +738,57 @@
             └── MEMORY.md</pre>
 
         <div class="callout">
-          <strong>Key Principle:</strong> Project-level config (<code>.claude/</code>) is shared with your team via git. User-level config (<code>~/.claude/</code>) is personal and stays on your machine.
+          <strong data-i18n="s1_callout_label">Key Principle:</strong> <span data-i18n="s1_callout_text">Project-level config (<code>.claude/</code>) is shared with your team via git. User-level config (<code>~/.claude/</code>) is personal and stays on your machine.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 2. CLAUDE.md ═══════════════ -->
+      <!-- 2. CLAUDE.md -->
       <section class="section" id="claude-md">
-        <div class="section-label">Section 2</div>
-        <h2>CLAUDE.md — Project Instructions</h2>
-        <p>CLAUDE.md is loaded at the start of every session. It provides persistent instructions that guide Claude's behavior consistently across conversations.</p>
+        <div class="section-label" data-i18n="section_2">Section 2</div>
+        <h2 data-i18n="s2_title">CLAUDE.md — Project Instructions</h2>
+        <p data-i18n="s2_desc">CLAUDE.md is loaded at the start of every session. It provides persistent instructions that guide Claude's behavior consistently across conversations.</p>
 
-        <h3>Placement Hierarchy</h3>
+        <h3 data-i18n="s2_placement">Placement Hierarchy</h3>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Location</th><th>Scope</th><th>Shared?</th></tr>
+              <tr><th data-i18n="th_location">Location</th><th data-i18n="th_scope">Scope</th><th data-i18n="th_shared">Shared?</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>~/.claude/CLAUDE.md</code></td><td>All your projects</td><td>No</td></tr>
-              <tr><td><code>./CLAUDE.md</code> or <code>./.claude/CLAUDE.md</code></td><td>Project root</td><td>Yes (via git)</td></tr>
-              <tr><td><code>./src/CLAUDE.md</code></td><td>Subdirectory</td><td>Loaded on-demand</td></tr>
+              <tr><td><code>~/.claude/CLAUDE.md</code></td><td data-i18n="s2_scope_all">All your projects</td><td data-i18n="s2_shared_no">No</td></tr>
+              <tr><td><code>./CLAUDE.md</code> or <code>./.claude/CLAUDE.md</code></td><td data-i18n="s2_scope_root">Project root</td><td data-i18n="s2_shared_git">Yes (via git)</td></tr>
+              <tr><td><code>./src/CLAUDE.md</code></td><td data-i18n="s2_scope_sub">Subdirectory</td><td data-i18n="s2_shared_demand">Loaded on-demand</td></tr>
             </tbody>
           </table>
         </div>
 
-        <h3>What to Include vs. Exclude</h3>
+        <h3 data-i18n="s2_include_exclude">What to Include vs. Exclude</h3>
         <div class="do-dont">
           <div class="do-box">
-            <div class="label">INCLUDE</div>
+            <div class="label" data-i18n="label_include">INCLUDE</div>
             <ul>
-              <li>Build, test, deploy commands</li>
-              <li>Code style rules differing from defaults</li>
-              <li>Repository conventions</li>
-              <li>Architecture decisions</li>
-              <li>Common gotchas</li>
-              <li>Required environment variables</li>
+              <li data-i18n="s2_inc_1">Build, test, deploy commands</li>
+              <li data-i18n="s2_inc_2">Code style rules differing from defaults</li>
+              <li data-i18n="s2_inc_3">Repository conventions</li>
+              <li data-i18n="s2_inc_4">Architecture decisions</li>
+              <li data-i18n="s2_inc_5">Common gotchas</li>
+              <li data-i18n="s2_inc_6">Required environment variables</li>
             </ul>
           </div>
           <div class="dont-box">
-            <div class="label">EXCLUDE</div>
+            <div class="label" data-i18n="label_exclude">EXCLUDE</div>
             <ul>
-              <li>Standard conventions Claude knows</li>
-              <li>Info derivable from reading code</li>
-              <li>Long tutorials or explanations</li>
-              <li>Frequently changing data</li>
-              <li>Detailed API docs (link instead)</li>
-              <li>Self-evident practices</li>
+              <li data-i18n="s2_exc_1">Standard conventions Claude knows</li>
+              <li data-i18n="s2_exc_2">Info derivable from reading code</li>
+              <li data-i18n="s2_exc_3">Long tutorials or explanations</li>
+              <li data-i18n="s2_exc_4">Frequently changing data</li>
+              <li data-i18n="s2_exc_5">Detailed API docs (link instead)</li>
+              <li data-i18n="s2_exc_6">Self-evident practices</li>
             </ul>
           </div>
         </div>
 
-        <h3>Example CLAUDE.md</h3>
+        <h3 data-i18n="s2_example">Example CLAUDE.md</h3>
         <pre><code><span style="color:var(--accent);font-weight:600"># MyApp</span>
 
 <span style="color:var(--accent);font-weight:600">## Build &amp; Test</span>
@@ -800,43 +812,43 @@
 - Business logic: src/logic/
 - Tests colocated: src/module.test.ts</code></pre>
 
-        <h3>Importing External Files</h3>
-        <p>Use <code>@path</code> syntax to reference other files, keeping CLAUDE.md concise:</p>
+        <h3 data-i18n="s2_import">Importing External Files</h3>
+        <p data-i18n="s2_import_desc">Use <code>@path</code> syntax to reference other files, keeping CLAUDE.md concise:</p>
         <pre><code>See @README.md for setup instructions.
 Git workflow: @docs/git-instructions.md
 Personal prefs: @~/.claude/my-project-instructions.md</code></pre>
 
         <div class="callout">
-          <strong>Best Practice:</strong> Keep CLAUDE.md under 200 lines. Longer files consume more context and reduce adherence. Split into <code>.claude/rules/</code> when it grows.
+          <strong data-i18n="s2_callout_label">Best Practice:</strong> <span data-i18n="s2_callout_text">Keep CLAUDE.md under 200 lines. Longer files consume more context and reduce adherence. Split into <code>.claude/rules/</code> when it grows.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 3. Settings ═══════════════ -->
+      <!-- 3. Settings -->
       <section class="section" id="settings">
-        <div class="section-label">Section 3</div>
-        <h2>Settings Configuration</h2>
-        <p>Settings control permissions, hooks, environment variables, and behavior. They follow a priority hierarchy:</p>
+        <div class="section-label" data-i18n="section_3">Section 3</div>
+        <h2 data-i18n="s3_title">Settings Configuration</h2>
+        <p data-i18n="s3_desc">Settings control permissions, hooks, environment variables, and behavior. They follow a priority hierarchy:</p>
 
         <div class="grid-2">
           <div class="mini-card">
-            <div class="mc-title">1. CLI Flags (Highest)</div>
+            <div class="mc-title" data-i18n="s3_cli">1. CLI Flags (Highest)</div>
             <div class="mc-desc"><code>--model</code>, <code>--permissions</code>, etc.</div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">2. Local Settings</div>
+            <div class="mc-title" data-i18n="s3_local">2. Local Settings</div>
             <div class="mc-desc"><code>.claude/settings.local.json</code> — gitignored</div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">3. Project Settings</div>
+            <div class="mc-title" data-i18n="s3_project">3. Project Settings</div>
             <div class="mc-desc"><code>.claude/settings.json</code> — committed</div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">4. User Settings (Lowest)</div>
+            <div class="mc-title" data-i18n="s3_user">4. User Settings (Lowest)</div>
             <div class="mc-desc"><code>~/.claude/settings.json</code> — global</div>
           </div>
         </div>
 
-        <h3>Project Settings Example</h3>
+        <h3 data-i18n="s3_project_example">Project Settings Example</h3>
         <pre><code>{
   "permissions": {
     "allow": [
@@ -855,7 +867,7 @@ Personal prefs: @~/.claude/my-project-instructions.md</code></pre>
   }
 }</code></pre>
 
-        <h3>User Settings Example</h3>
+        <h3 data-i18n="s3_user_example">User Settings Example</h3>
         <pre><code>{
   "model": "opus",
   "permissions": {
@@ -870,42 +882,42 @@ Personal prefs: @~/.claude/my-project-instructions.md</code></pre>
 }</code></pre>
 
         <div class="callout-info callout">
-          <strong>Tip:</strong> Use <code>settings.local.json</code> for machine-specific overrides you don't want to commit (API keys, personal preferences).
+          <strong data-i18n="s3_tip_label">Tip:</strong> <span data-i18n="s3_tip_text">Use <code>settings.local.json</code> for machine-specific overrides you don't want to commit (API keys, personal preferences).</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 4. Skills ═══════════════ -->
+      <!-- 4. Skills -->
       <section class="section" id="skills">
-        <div class="section-label">Section 4</div>
-        <h2>Custom Skills (Slash Commands)</h2>
-        <p>Skills are markdown files that create custom <code>/commands</code>. They extend Claude with domain-specific workflows.</p>
+        <div class="section-label" data-i18n="section_4">Section 4</div>
+        <h2 data-i18n="s4_title">Custom Skills (Slash Commands)</h2>
+        <p data-i18n="s4_desc">Skills are markdown files that create custom <code>/commands</code>. They extend Claude with domain-specific workflows.</p>
 
-        <h3>How to Create a Skill</h3>
+        <h3 data-i18n="s4_create">How to Create a Skill</h3>
         <div class="steps">
           <div class="step">
             <div class="step-num">1</div>
             <div class="step-content">
-              <div class="step-title">Create the directory</div>
-              <div class="step-desc"><code>mkdir -p .claude/skills/my-skill</code> for project or <code>~/.claude/skills/my-skill</code> for personal</div>
+              <div class="step-title" data-i18n="s4_step1_title">Create the directory</div>
+              <div class="step-desc"><code>mkdir -p .claude/skills/my-skill</code> <span data-i18n="s4_step1_desc">for project or</span> <code>~/.claude/skills/my-skill</code> <span data-i18n="s4_step1_desc2">for personal</span></div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">2</div>
             <div class="step-content">
-              <div class="step-title">Write SKILL.md</div>
-              <div class="step-desc">Add YAML frontmatter + markdown instructions</div>
+              <div class="step-title" data-i18n="s4_step2_title">Write SKILL.md</div>
+              <div class="step-desc" data-i18n="s4_step2_desc">Add YAML frontmatter + markdown instructions</div>
             </div>
           </div>
           <div class="step">
             <div class="step-num">3</div>
             <div class="step-content">
-              <div class="step-title">Test it</div>
-              <div class="step-desc">Invoke with <code>/my-skill</code> or <code>/my-skill &lt;arguments&gt;</code></div>
+              <div class="step-title" data-i18n="s4_step3_title">Test it</div>
+              <div class="step-desc" data-i18n="s4_step3_desc">Invoke with <code>/my-skill</code> or <code>/my-skill &lt;arguments&gt;</code></div>
             </div>
           </div>
         </div>
 
-        <h3>SKILL.md Format</h3>
+        <h3 data-i18n="s4_format">SKILL.md Format</h3>
         <pre><code>---
 name: fix-issue
 description: Fix a GitHub issue by number
@@ -923,47 +935,47 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
 5. Write tests
 6. Create a commit</code></pre>
 
-        <h3>Frontmatter Reference</h3>
+        <h3 data-i18n="s4_frontmatter">Frontmatter Reference</h3>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Field</th><th>Description</th></tr>
+              <tr><th data-i18n="th_field">Field</th><th data-i18n="th_description">Description</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>name</code></td><td>Slash command name (lowercase, hyphens)</td></tr>
-              <tr><td><code>description</code></td><td>What it does — Claude uses this for auto-invocation</td></tr>
-              <tr><td><code>argument-hint</code></td><td>Hint shown in autocomplete</td></tr>
-              <tr><td><code>user-invocable</code></td><td><code>true</code>/<code>false</code> — show in <code>/</code> menu</td></tr>
-              <tr><td><code>disable-model-invocation</code></td><td><code>true</code> — only manual invocation</td></tr>
-              <tr><td><code>allowed-tools</code></td><td>Comma-separated tool whitelist</td></tr>
-              <tr><td><code>model</code></td><td><code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code></td></tr>
-              <tr><td><code>context</code></td><td><code>fork</code> — run in isolated subagent</td></tr>
-              <tr><td><code>agent</code></td><td>Subagent type when <code>context: fork</code></td></tr>
-              <tr><td><code>paths</code></td><td>Glob patterns — only auto-load for matching files</td></tr>
+              <tr><td><code>name</code></td><td data-i18n="s4_f_name">Slash command name (lowercase, hyphens)</td></tr>
+              <tr><td><code>description</code></td><td data-i18n="s4_f_desc">What it does — Claude uses this for auto-invocation</td></tr>
+              <tr><td><code>argument-hint</code></td><td data-i18n="s4_f_hint">Hint shown in autocomplete</td></tr>
+              <tr><td><code>user-invocable</code></td><td data-i18n="s4_f_invocable"><code>true</code>/<code>false</code> — show in <code>/</code> menu</td></tr>
+              <tr><td><code>disable-model-invocation</code></td><td data-i18n="s4_f_disable"><code>true</code> — only manual invocation</td></tr>
+              <tr><td><code>allowed-tools</code></td><td data-i18n="s4_f_tools">Comma-separated tool whitelist</td></tr>
+              <tr><td><code>model</code></td><td data-i18n="s4_f_model"><code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code></td></tr>
+              <tr><td><code>context</code></td><td data-i18n="s4_f_context"><code>fork</code> — run in isolated subagent</td></tr>
+              <tr><td><code>agent</code></td><td data-i18n="s4_f_agent">Subagent type when <code>context: fork</code></td></tr>
+              <tr><td><code>paths</code></td><td data-i18n="s4_f_paths">Glob patterns — only auto-load for matching files</td></tr>
             </tbody>
           </table>
         </div>
 
-        <h3>Using Arguments</h3>
+        <h3 data-i18n="s4_args">Using Arguments</h3>
         <pre><code>---
 name: migrate-component
 description: Migrate a component between frameworks
 ---
 
 Migrate <strong>$0</strong> from <strong>$1</strong> to <strong>$2</strong>.</code></pre>
-        <p>Invoke: <code>/migrate-component SearchBar React Vue</code></p>
+        <p><span data-i18n="s4_invoke">Invoke:</span> <code>/migrate-component SearchBar React Vue</code></p>
         <div class="grid-2" style="margin-top:14px">
           <div class="mini-card">
             <div class="mc-title"><code>$ARGUMENTS</code></div>
-            <div class="mc-desc">All arguments as a single string</div>
+            <div class="mc-desc" data-i18n="s4_args_all">All arguments as a single string</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>$0</code>, <code>$1</code>, <code>$2</code></div>
-            <div class="mc-desc">Positional arguments (0-indexed)</div>
+            <div class="mc-desc" data-i18n="s4_args_pos">Positional arguments (0-indexed)</div>
           </div>
         </div>
 
-        <h3>Dynamic Context &amp; Subagent Execution</h3>
+        <h3 data-i18n="s4_dynamic">Dynamic Context &amp; Subagent Execution</h3>
         <pre><code>---
 name: pr-summary
 description: Summarize the current pull request
@@ -976,10 +988,10 @@ agent: Explore
 - Comments: !`gh pr view --comments`
 
 Summarize this PR, highlighting key changes and risks.</code></pre>
-        <p>Shell commands in <code>!`command`</code> run before Claude sees the skill. The <code>context: fork</code> runs it in an isolated subagent.</p>
+        <p data-i18n="s4_dynamic_desc">Shell commands in <code>!`command`</code> run before Claude sees the skill. The <code>context: fork</code> runs it in an isolated subagent.</p>
 
         <details>
-          <summary>Skill Directory Structure</summary>
+          <summary data-i18n="s4_dir_structure">Skill Directory Structure</summary>
           <div class="details-content">
             <pre class="tree">my-skill/
 ├── <span class="hl">SKILL.md</span>              <span class="dim"># Main instructions (required)</span>
@@ -992,30 +1004,30 @@ Summarize this PR, highlighting key changes and risks.</code></pre>
         </details>
       </section>
 
-      <!-- ═══════════════ 5. Subagents ═══════════════ -->
+      <!-- 5. Subagents -->
       <section class="section" id="subagents">
-        <div class="section-label">Section 5</div>
-        <h2>Subagents</h2>
-        <p>Subagents are specialized AI assistants that run in isolated contexts with their own system prompt, tools, and model. Claude delegates tasks to them automatically.</p>
+        <div class="section-label" data-i18n="section_5">Section 5</div>
+        <h2 data-i18n="s5_title">Subagents</h2>
+        <p data-i18n="s5_desc">Subagents are specialized AI assistants that run in isolated contexts with their own system prompt, tools, and model. Claude delegates tasks to them automatically.</p>
 
-        <h3>Built-in Subagents</h3>
+        <h3 data-i18n="s5_builtin">Built-in Subagents</h3>
         <div class="grid-3">
           <div class="mini-card">
             <div class="mc-title">Explore</div>
-            <div class="mc-desc">Read-only. Fast codebase search and analysis without modifications.</div>
+            <div class="mc-desc" data-i18n="s5_explore">Read-only. Fast codebase search and analysis without modifications.</div>
           </div>
           <div class="mini-card">
             <div class="mc-title">Plan</div>
-            <div class="mc-desc">Read-only. Research and plan before implementation.</div>
+            <div class="mc-desc" data-i18n="s5_plan">Read-only. Research and plan before implementation.</div>
           </div>
           <div class="mini-card">
             <div class="mc-title">general-purpose</div>
-            <div class="mc-desc">All tools. Complex multi-step tasks requiring full access.</div>
+            <div class="mc-desc" data-i18n="s5_general">All tools. Complex multi-step tasks requiring full access.</div>
           </div>
         </div>
 
-        <h3>Creating a Custom Subagent</h3>
-        <p>Create <code>.claude/agents/code-reviewer/code-reviewer.md</code>:</p>
+        <h3 data-i18n="s5_create">Creating a Custom Subagent</h3>
+        <p><span data-i18n="s5_create_desc">Create</span> <code>.claude/agents/code-reviewer/code-reviewer.md</code>:</p>
         <pre><code>---
 name: code-reviewer
 description: Expert code review specialist
@@ -1033,46 +1045,46 @@ You are a senior code reviewer. When invoked:
    - Test coverage
 3. Provide feedback organized by severity.</code></pre>
 
-        <h3>Frontmatter Reference</h3>
+        <h3 data-i18n="s5_frontmatter">Frontmatter Reference</h3>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Field</th><th>Description</th></tr>
+              <tr><th data-i18n="th_field">Field</th><th data-i18n="th_description">Description</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>name</code></td><td>Unique identifier (lowercase, hyphens)</td></tr>
-              <tr><td><code>description</code></td><td>When Claude should delegate to this agent</td></tr>
-              <tr><td><code>tools</code></td><td>Allowed tools (allowlist)</td></tr>
-              <tr><td><code>disallowedTools</code></td><td>Tools to deny (denylist)</td></tr>
-              <tr><td><code>model</code></td><td><code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code></td></tr>
-              <tr><td><code>permissionMode</code></td><td><code>default</code>, <code>acceptEdits</code>, <code>dontAsk</code>, <code>bypassPermissions</code></td></tr>
-              <tr><td><code>maxTurns</code></td><td>Max agentic turns before stopping</td></tr>
-              <tr><td><code>memory</code></td><td><code>user</code>, <code>project</code>, or <code>local</code></td></tr>
-              <tr><td><code>background</code></td><td><code>true</code> — always run as background task</td></tr>
-              <tr><td><code>isolation</code></td><td><code>worktree</code> — run in isolated git worktree</td></tr>
+              <tr><td><code>name</code></td><td data-i18n="s5_f_name">Unique identifier (lowercase, hyphens)</td></tr>
+              <tr><td><code>description</code></td><td data-i18n="s5_f_desc">When Claude should delegate to this agent</td></tr>
+              <tr><td><code>tools</code></td><td data-i18n="s5_f_tools">Allowed tools (allowlist)</td></tr>
+              <tr><td><code>disallowedTools</code></td><td data-i18n="s5_f_disallowed">Tools to deny (denylist)</td></tr>
+              <tr><td><code>model</code></td><td data-i18n="s5_f_model"><code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code></td></tr>
+              <tr><td><code>permissionMode</code></td><td data-i18n="s5_f_perm"><code>default</code>, <code>acceptEdits</code>, <code>dontAsk</code>, <code>bypassPermissions</code></td></tr>
+              <tr><td><code>maxTurns</code></td><td data-i18n="s5_f_turns">Max agentic turns before stopping</td></tr>
+              <tr><td><code>memory</code></td><td data-i18n="s5_f_memory"><code>user</code>, <code>project</code>, or <code>local</code></td></tr>
+              <tr><td><code>background</code></td><td data-i18n="s5_f_bg"><code>true</code> — always run as background task</td></tr>
+              <tr><td><code>isolation</code></td><td data-i18n="s5_f_isolation"><code>worktree</code> — run in isolated git worktree</td></tr>
             </tbody>
           </table>
         </div>
 
-        <h3>Invoking Subagents</h3>
+        <h3 data-i18n="s5_invoking">Invoking Subagents</h3>
         <div class="grid-3">
           <div class="mini-card">
-            <div class="mc-title">Natural Language</div>
-            <div class="mc-desc">Claude decides: "Use the code-reviewer to check my changes"</div>
+            <div class="mc-title" data-i18n="s5_invoke_natural">Natural Language</div>
+            <div class="mc-desc" data-i18n="s5_invoke_natural_desc">Claude decides: "Use the code-reviewer to check my changes"</div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">@-Mention</div>
-            <div class="mc-desc">Guaranteed: <code>@"code-reviewer (agent)"</code></div>
+            <div class="mc-title" data-i18n="s5_invoke_mention">@-Mention</div>
+            <div class="mc-desc"><span data-i18n="s5_invoke_mention_desc">Guaranteed:</span> <code>@"code-reviewer (agent)"</code></div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">Session-wide</div>
+            <div class="mc-title" data-i18n="s5_invoke_session">Session-wide</div>
             <div class="mc-desc"><code>claude --agent code-reviewer</code></div>
           </div>
         </div>
 
-        <h3>Example Subagents</h3>
+        <h3 data-i18n="s5_examples">Example Subagents</h3>
         <details>
-          <summary>Debugger (can edit and fix)</summary>
+          <summary data-i18n="s5_ex_debugger">Debugger (can edit and fix)</summary>
           <div class="details-content">
             <pre><code>---
 name: debugger
@@ -1090,7 +1102,7 @@ You are an expert debugger. When invoked:
         </details>
 
         <details>
-          <summary>Read-Only Researcher</summary>
+          <summary data-i18n="s5_ex_researcher">Read-Only Researcher</summary>
           <div class="details-content">
             <pre><code>---
 name: researcher
@@ -1106,7 +1118,7 @@ Never modify files.</code></pre>
         </details>
 
         <details>
-          <summary>Database Analyst (with hooks)</summary>
+          <summary data-i18n="s5_ex_db">Database Analyst (with hooks)</summary>
           <div class="details-content">
             <pre><code>---
 name: db-reader
@@ -1126,37 +1138,37 @@ Execute SELECT queries only.</code></pre>
         </details>
 
         <div class="callout">
-          <strong>Persistent Memory:</strong> Add <code>memory: project</code> to your agent frontmatter so it accumulates knowledge across sessions at <code>.claude/agent-memory/&lt;name&gt;/</code>.
+          <strong data-i18n="s5_callout_label">Persistent Memory:</strong> <span data-i18n="s5_callout_text">Add <code>memory: project</code> to your agent frontmatter so it accumulates knowledge across sessions at <code>.claude/agent-memory/&lt;name&gt;/</code>.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 6. Hooks ═══════════════ -->
+      <!-- 6. Hooks -->
       <section class="section" id="hooks">
-        <div class="section-label">Section 6</div>
-        <h2>Hooks</h2>
-        <p>Hooks are shell commands that execute at specific lifecycle points. Unlike CLAUDE.md instructions which are advisory, hooks provide <strong>deterministic control</strong> — they always execute.</p>
+        <div class="section-label" data-i18n="section_6">Section 6</div>
+        <h2 data-i18n="s6_title">Hooks</h2>
+        <p data-i18n="s6_desc">Hooks are shell commands that execute at specific lifecycle points. Unlike CLAUDE.md instructions which are advisory, hooks provide <strong>deterministic control</strong> — they always execute.</p>
 
-        <h3>Hook Events</h3>
+        <h3 data-i18n="s6_events">Hook Events</h3>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Event</th><th>When it fires</th><th>Can Block?</th></tr>
+              <tr><th data-i18n="th_event">Event</th><th data-i18n="th_when">When it fires</th><th data-i18n="th_block">Can Block?</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>SessionStart</code></td><td>Session begins or resumes</td><td>No</td></tr>
-              <tr><td><code>UserPromptSubmit</code></td><td>Before processing your prompt</td><td>No</td></tr>
-              <tr><td><code>PreToolUse</code></td><td>Before a tool executes</td><td>Yes (exit 2)</td></tr>
-              <tr><td><code>PostToolUse</code></td><td>After a tool succeeds</td><td>No</td></tr>
-              <tr><td><code>PostToolUseFailure</code></td><td>After a tool fails</td><td>No</td></tr>
-              <tr><td><code>Notification</code></td><td>Claude needs your attention</td><td>No</td></tr>
-              <tr><td><code>Stop</code></td><td>Claude finishes responding</td><td>No</td></tr>
-              <tr><td><code>SubagentStart</code></td><td>Subagent starts</td><td>No</td></tr>
-              <tr><td><code>SubagentStop</code></td><td>Subagent finishes</td><td>No</td></tr>
+              <tr><td><code>SessionStart</code></td><td data-i18n="s6_e_session">Session begins or resumes</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>UserPromptSubmit</code></td><td data-i18n="s6_e_prompt">Before processing your prompt</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>PreToolUse</code></td><td data-i18n="s6_e_pre">Before a tool executes</td><td data-i18n="s6_e_pre_block">Yes (exit 2)</td></tr>
+              <tr><td><code>PostToolUse</code></td><td data-i18n="s6_e_post">After a tool succeeds</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>PostToolUseFailure</code></td><td data-i18n="s6_e_fail">After a tool fails</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>Notification</code></td><td data-i18n="s6_e_notif">Claude needs your attention</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>Stop</code></td><td data-i18n="s6_e_stop">Claude finishes responding</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>SubagentStart</code></td><td data-i18n="s6_e_substart">Subagent starts</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>SubagentStop</code></td><td data-i18n="s6_e_substop">Subagent finishes</td><td data-i18n="no">No</td></tr>
             </tbody>
           </table>
         </div>
 
-        <h3>Configuration</h3>
+        <h3 data-i18n="s6_config">Configuration</h3>
         <pre><code>{
   "hooks": {
     "PreToolUse": [
@@ -1173,23 +1185,23 @@ Execute SELECT queries only.</code></pre>
   }
 }</code></pre>
 
-        <h3>Exit Codes</h3>
+        <h3 data-i18n="s6_exit">Exit Codes</h3>
         <div class="grid-3">
           <div class="mini-card">
             <div class="mc-title" style="color:#16a34a">Exit 0</div>
-            <div class="mc-desc">Action proceeds. Stdout injected as context.</div>
+            <div class="mc-desc" data-i18n="s6_exit0">Action proceeds. Stdout injected as context.</div>
           </div>
           <div class="mini-card">
             <div class="mc-title" style="color:#dc2626">Exit 2</div>
-            <div class="mc-desc">Action blocked. Stderr shown as feedback.</div>
+            <div class="mc-desc" data-i18n="s6_exit2">Action blocked. Stderr shown as feedback.</div>
           </div>
           <div class="mini-card">
-            <div class="mc-title">Other</div>
-            <div class="mc-desc">Action proceeds. Stderr logged only.</div>
+            <div class="mc-title" data-i18n="s6_other">Other</div>
+            <div class="mc-desc" data-i18n="s6_exit_other">Action proceeds. Stderr logged only.</div>
           </div>
         </div>
 
-        <h3>Example: Protect Files</h3>
+        <h3 data-i18n="s6_protect">Example: Protect Files</h3>
         <pre><code>#!/bin/bash
 # .claude/hooks/protect-files.sh
 INPUT=$(cat)
@@ -1204,7 +1216,7 @@ for pattern in "${PROTECTED[@]}"; do
 done
 exit 0</code></pre>
 
-        <h3>Example: Auto-Format After Edits</h3>
+        <h3 data-i18n="s6_format">Example: Auto-Format After Edits</h3>
         <pre><code>{
   "hooks": {
     "PostToolUse": [
@@ -1221,35 +1233,35 @@ exit 0</code></pre>
   }
 }</code></pre>
 
-        <h3>Hook Types</h3>
+        <h3 data-i18n="s6_types">Hook Types</h3>
         <div class="grid-2">
           <div class="mini-card">
             <div class="mc-title"><code>command</code></div>
-            <div class="mc-desc">Run a shell command</div>
+            <div class="mc-desc" data-i18n="s6_type_cmd">Run a shell command</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>prompt</code></div>
-            <div class="mc-desc">Single LLM call (no tools)</div>
+            <div class="mc-desc" data-i18n="s6_type_prompt">Single LLM call (no tools)</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>agent</code></div>
-            <div class="mc-desc">Full subagent execution</div>
+            <div class="mc-desc" data-i18n="s6_type_agent">Full subagent execution</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>http</code></div>
-            <div class="mc-desc">POST to HTTP endpoint</div>
+            <div class="mc-desc" data-i18n="s6_type_http">POST to HTTP endpoint</div>
           </div>
         </div>
       </section>
 
-      <!-- ═══════════════ 7. MCP ═══════════════ -->
+      <!-- 7. MCP -->
       <section class="section" id="mcp">
-        <div class="section-label">Section 7</div>
-        <h2>MCP Servers</h2>
-        <p>The Model Context Protocol connects Claude to external tools and services — databases, APIs, GitHub, Slack, and more.</p>
+        <div class="section-label" data-i18n="section_7">Section 7</div>
+        <h2 data-i18n="s7_title">MCP Servers</h2>
+        <p data-i18n="s7_desc">The Model Context Protocol connects Claude to external tools and services — databases, APIs, GitHub, Slack, and more.</p>
 
-        <h3>Configuration</h3>
-        <p>Place in <code>.claude/.mcp.json</code> (project) or <code>~/.claude/.mcp.json</code> (user):</p>
+        <h3 data-i18n="s7_config">Configuration</h3>
+        <p><span data-i18n="s7_config_desc">Place in</span> <code>.claude/.mcp.json</code> <span data-i18n="s7_config_desc2">(project) or</span> <code>~/.claude/.mcp.json</code> <span data-i18n="s7_config_desc3">(user):</span></p>
         <pre><code>{
   "mcpServers": {
     "github": {
@@ -1276,36 +1288,36 @@ exit 0</code></pre>
   }
 }</code></pre>
 
-        <h3>Server Types</h3>
+        <h3 data-i18n="s7_types">Server Types</h3>
         <div class="grid-2">
           <div class="mini-card">
             <div class="mc-title"><code>stdio</code></div>
-            <div class="mc-desc">Local process via stdin/stdout — CLI tools, npm packages</div>
+            <div class="mc-desc" data-i18n="s7_stdio">Local process via stdin/stdout — CLI tools, npm packages</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>http</code></div>
-            <div class="mc-desc">HTTP POST — remote servers, cloud services</div>
+            <div class="mc-desc" data-i18n="s7_http">HTTP POST — remote servers, cloud services</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>sse</code></div>
-            <div class="mc-desc">Server-Sent Events — real-time data streams</div>
+            <div class="mc-desc" data-i18n="s7_sse">Server-Sent Events — real-time data streams</div>
           </div>
           <div class="mini-card">
             <div class="mc-title"><code>ws</code></div>
-            <div class="mc-desc">WebSocket — persistent bidirectional connections</div>
+            <div class="mc-desc" data-i18n="s7_ws">WebSocket — persistent bidirectional connections</div>
           </div>
         </div>
 
         <div class="callout-info callout">
-          <strong>Scope:</strong> Project MCP (<code>.claude/.mcp.json</code>) is shared with the team. User MCP (<code>~/.claude/.mcp.json</code>) applies to all your projects. You can also scope MCP servers to specific subagents via their frontmatter.
+          <strong data-i18n="s7_callout_label">Scope:</strong> <span data-i18n="s7_callout_text">Project MCP (<code>.claude/.mcp.json</code>) is shared with the team. User MCP (<code>~/.claude/.mcp.json</code>) applies to all your projects. You can also scope MCP servers to specific subagents via their frontmatter.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 8. Rules ═══════════════ -->
+      <!-- 8. Rules -->
       <section class="section" id="rules">
-        <div class="section-label">Section 8</div>
-        <h2>Rules (Modular Instructions)</h2>
-        <p>Rules let you split CLAUDE.md into topic-specific files. They live in <code>.claude/rules/</code> and can be path-specific.</p>
+        <div class="section-label" data-i18n="section_8">Section 8</div>
+        <h2 data-i18n="s8_title">Rules (Modular Instructions)</h2>
+        <p data-i18n="s8_desc">Rules let you split CLAUDE.md into topic-specific files. They live in <code>.claude/rules/</code> and can be path-specific.</p>
 
         <pre class="tree">.claude/rules/
 ├── <span class="hl">code-style.md</span>        <span class="dim"># Always loaded</span>
@@ -1314,8 +1326,8 @@ exit 0</code></pre>
 └── api/
     └── <span class="hl">endpoint-design.md</span> <span class="dim"># Path-specific</span></pre>
 
-        <h3>Path-Specific Rules</h3>
-        <p>Add <code>paths</code> frontmatter to only load rules when Claude works with matching files:</p>
+        <h3 data-i18n="s8_path">Path-Specific Rules</h3>
+        <p data-i18n="s8_path_desc">Add <code>paths</code> frontmatter to only load rules when Claude works with matching files:</p>
         <pre><code>---
 paths:
   - "src/api/**/*.ts"
@@ -1330,44 +1342,44 @@ paths:
 - Return consistent pagination for list endpoints</code></pre>
 
         <div class="callout">
-          <strong>When to use rules vs. CLAUDE.md:</strong> Use CLAUDE.md for universal project instructions. Use rules for domain-specific instructions that only apply to certain areas of the codebase.
+          <strong data-i18n="s8_callout_label">When to use rules vs. CLAUDE.md:</strong> <span data-i18n="s8_callout_text">Use CLAUDE.md for universal project instructions. Use rules for domain-specific instructions that only apply to certain areas of the codebase.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 9. Memory ═══════════════ -->
+      <!-- 9. Memory -->
       <section class="section" id="memory">
-        <div class="section-label">Section 9</div>
-        <h2>Memory System</h2>
-        <p>Claude's auto memory accumulates knowledge across sessions — build commands, patterns, debugging insights, and workflow habits.</p>
+        <div class="section-label" data-i18n="section_9">Section 9</div>
+        <h2 data-i18n="s9_title">Memory System</h2>
+        <p data-i18n="s9_desc">Claude's auto memory accumulates knowledge across sessions — build commands, patterns, debugging insights, and workflow habits.</p>
 
-        <h3>Storage Location</h3>
+        <h3 data-i18n="s9_storage">Storage Location</h3>
         <pre><code>~/.claude/projects/&lt;project&gt;/memory/
 ├── MEMORY.md            # Index (first 200 lines loaded at startup)
 ├── user_role.md         # User information
 ├── feedback_testing.md  # User feedback
 └── project_goals.md     # Project context</code></pre>
 
-        <h3>Memory Types</h3>
+        <h3 data-i18n="s9_types">Memory Types</h3>
         <div class="grid-2">
           <div class="mini-card">
             <div class="mc-title">user</div>
-            <div class="mc-desc">User's role, preferences, knowledge level</div>
+            <div class="mc-desc" data-i18n="s9_user">User's role, preferences, knowledge level</div>
           </div>
           <div class="mini-card">
             <div class="mc-title">feedback</div>
-            <div class="mc-desc">Corrections and confirmed approaches</div>
+            <div class="mc-desc" data-i18n="s9_feedback">Corrections and confirmed approaches</div>
           </div>
           <div class="mini-card">
             <div class="mc-title">project</div>
-            <div class="mc-desc">Ongoing work, goals, decisions</div>
+            <div class="mc-desc" data-i18n="s9_project">Ongoing work, goals, decisions</div>
           </div>
           <div class="mini-card">
             <div class="mc-title">reference</div>
-            <div class="mc-desc">Pointers to external resources</div>
+            <div class="mc-desc" data-i18n="s9_reference">Pointers to external resources</div>
           </div>
         </div>
 
-        <h3>Memory File Format</h3>
+        <h3 data-i18n="s9_format">Memory File Format</h3>
         <pre><code>---
 name: user-role
 description: User is a senior backend engineer
@@ -1378,56 +1390,56 @@ User is a senior backend engineer with 8+ years
 of experience in Go and distributed systems.
 New to the React frontend of this project.</code></pre>
 
-        <h3>Enable / Disable</h3>
+        <h3 data-i18n="s9_toggle">Enable / Disable</h3>
         <pre><code>// In settings.json
 { "autoMemoryEnabled": false }</code></pre>
 
         <div class="callout-info callout">
-          <strong>Auto memory vs. CLAUDE.md:</strong> CLAUDE.md is written by you with explicit instructions. Auto memory is written by Claude to remember learnings. Both load at session start, but CLAUDE.md is your source of truth.
+          <strong data-i18n="s9_callout_label">Auto memory vs. CLAUDE.md:</strong> <span data-i18n="s9_callout_text">CLAUDE.md is written by you with explicit instructions. Auto memory is written by Claude to remember learnings. Both load at session start, but CLAUDE.md is your source of truth.</span>
         </div>
       </section>
 
-      <!-- ═══════════════ 10. Checklist ═══════════════ -->
+      <!-- 10. Checklist -->
       <section class="section" id="checklist">
-        <div class="section-label">Section 10</div>
-        <h2>Setup Checklist</h2>
-        <p>Use this checklist when setting up Claude Code for a new project:</p>
+        <div class="section-label" data-i18n="section_10">Section 10</div>
+        <h2 data-i18n="s10_title">Setup Checklist</h2>
+        <p data-i18n="s10_desc">Use this checklist when setting up Claude Code for a new project:</p>
 
         <ul class="checklist">
-          <li>Write <code>CLAUDE.md</code> with build commands, code style, and conventions</li>
-          <li>Configure <code>.claude/settings.json</code> with permissions and hooks</li>
-          <li>Create skills in <code>.claude/skills/</code> for reusable workflows</li>
-          <li>Create subagents in <code>.claude/agents/</code> for specialized tasks</li>
-          <li>Set up hooks for automation (lint, format, protect files)</li>
-          <li>Connect MCP servers in <code>.claude/.mcp.json</code></li>
-          <li>Add <code>.claude/rules/</code> for modular, path-specific instructions</li>
-          <li>Commit to git: CLAUDE.md, settings.json, skills/, agents/, rules/</li>
-          <li>Gitignore: <code>settings.local.json</code>, <code>agent-memory-local/</code></li>
+          <li data-i18n="s10_c1">Write <code>CLAUDE.md</code> with build commands, code style, and conventions</li>
+          <li data-i18n="s10_c2">Configure <code>.claude/settings.json</code> with permissions and hooks</li>
+          <li data-i18n="s10_c3">Create skills in <code>.claude/skills/</code> for reusable workflows</li>
+          <li data-i18n="s10_c4">Create subagents in <code>.claude/agents/</code> for specialized tasks</li>
+          <li data-i18n="s10_c5">Set up hooks for automation (lint, format, protect files)</li>
+          <li data-i18n="s10_c6">Connect MCP servers in <code>.claude/.mcp.json</code></li>
+          <li data-i18n="s10_c7">Add <code>.claude/rules/</code> for modular, path-specific instructions</li>
+          <li data-i18n="s10_c8">Commit to git: CLAUDE.md, settings.json, skills/, agents/, rules/</li>
+          <li data-i18n="s10_c9">Gitignore: <code>settings.local.json</code>, <code>agent-memory-local/</code></li>
         </ul>
 
-        <h3>.gitignore Additions</h3>
+        <h3 data-i18n="s10_gitignore">.gitignore Additions</h3>
         <pre><code>.claude/settings.local.json
 .claude/agent-memory-local/</code></pre>
 
-        <h3>Quick Reference — All File Paths</h3>
+        <h3 data-i18n="s10_reference">Quick Reference — All File Paths</h3>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Path</th><th>Purpose</th><th>Share?</th></tr>
+              <tr><th data-i18n="th_path">Path</th><th data-i18n="th_purpose">Purpose</th><th data-i18n="th_share">Share?</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>.claude/CLAUDE.md</code></td><td>Project instructions</td><td>Yes</td></tr>
-              <tr><td><code>.claude/settings.json</code></td><td>Project settings</td><td>Yes</td></tr>
-              <tr><td><code>.claude/settings.local.json</code></td><td>Local overrides</td><td>No</td></tr>
-              <tr><td><code>.claude/.mcp.json</code></td><td>MCP servers</td><td>Yes</td></tr>
-              <tr><td><code>.claude/skills/*/SKILL.md</code></td><td>Custom commands</td><td>Yes</td></tr>
-              <tr><td><code>.claude/agents/*.md</code></td><td>Custom subagents</td><td>Yes</td></tr>
-              <tr><td><code>.claude/rules/*.md</code></td><td>Modular rules</td><td>Yes</td></tr>
-              <tr><td><code>.claude/hooks/*.sh</code></td><td>Hook scripts</td><td>Yes</td></tr>
-              <tr><td><code>.claude/agent-memory/</code></td><td>Subagent memory</td><td>Optional</td></tr>
-              <tr><td><code>~/.claude/settings.json</code></td><td>User settings</td><td>No</td></tr>
-              <tr><td><code>~/.claude/CLAUDE.md</code></td><td>Personal instructions</td><td>No</td></tr>
-              <tr><td><code>~/.claude/projects/*/memory/</code></td><td>Auto memory</td><td>No</td></tr>
+              <tr><td><code>.claude/CLAUDE.md</code></td><td data-i18n="s10_r1">Project instructions</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/settings.json</code></td><td data-i18n="s10_r2">Project settings</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/settings.local.json</code></td><td data-i18n="s10_r3">Local overrides</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>.claude/.mcp.json</code></td><td data-i18n="s10_r4">MCP servers</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/skills/*/SKILL.md</code></td><td data-i18n="s10_r5">Custom commands</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/agents/*.md</code></td><td data-i18n="s10_r6">Custom subagents</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/rules/*.md</code></td><td data-i18n="s10_r7">Modular rules</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/hooks/*.sh</code></td><td data-i18n="s10_r8">Hook scripts</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>.claude/agent-memory/</code></td><td data-i18n="s10_r9">Subagent memory</td><td data-i18n="s10_r9_share">Optional</td></tr>
+              <tr><td><code>~/.claude/settings.json</code></td><td data-i18n="s10_r10">User settings</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>~/.claude/CLAUDE.md</code></td><td data-i18n="s10_r11">Personal instructions</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>~/.claude/projects/*/memory/</code></td><td data-i18n="s10_r12">Auto memory</td><td data-i18n="no">No</td></tr>
             </tbody>
           </table>
         </div>
@@ -1437,6 +1449,389 @@ New to the React frontend of this project.</code></pre>
   </div>
 
   <script>
+    // ── Translations ──
+    const translations = {
+      en: {
+        subtitle: "Best Practices Guide",
+        nav_structure: "Project Structure",
+        nav_claudemd: "CLAUDE.md",
+        nav_settings: "Settings",
+        nav_skills: "Skills",
+        nav_subagents: "Subagents",
+        nav_hooks: "Hooks",
+        nav_mcp: "MCP Servers",
+        nav_rules: "Rules",
+        nav_memory: "Memory",
+        nav_checklist: "Checklist",
+        theme_toggle: "Toggle Theme",
+        hero_title: "Best Practices",
+        hero_desc: 'Everything you need to set up your <code>.claude/</code> folder, write effective instructions, create skills &amp; subagents, and structure your project for optimal results.',
+        section_1: "Section 1", section_2: "Section 2", section_3: "Section 3", section_4: "Section 4", section_5: "Section 5",
+        section_6: "Section 6", section_7: "Section 7", section_8: "Section 8", section_9: "Section 9", section_10: "Section 10",
+        s1_title: "Project Structure",
+        s1_desc: 'A well-organized <code>.claude/</code> directory is the foundation of effective Claude Code usage. Here\'s the recommended layout:',
+        s1_user_config: "User-Level Configuration",
+        s1_user_config_desc: 'Global settings that apply to all your projects live in <code>~/.claude/</code>:',
+        s1_callout_label: "Key Principle:",
+        s1_callout_text: 'Project-level config (<code>.claude/</code>) is shared with your team via git. User-level config (<code>~/.claude/</code>) is personal and stays on your machine.',
+        s2_title: "CLAUDE.md — Project Instructions",
+        s2_desc: "CLAUDE.md is loaded at the start of every session. It provides persistent instructions that guide Claude's behavior consistently across conversations.",
+        s2_placement: "Placement Hierarchy",
+        th_location: "Location", th_scope: "Scope", th_shared: "Shared?",
+        s2_scope_all: "All your projects", s2_shared_no: "No",
+        s2_scope_root: "Project root", s2_shared_git: "Yes (via git)",
+        s2_scope_sub: "Subdirectory", s2_shared_demand: "Loaded on-demand",
+        s2_include_exclude: "What to Include vs. Exclude",
+        label_include: "INCLUDE", label_exclude: "EXCLUDE",
+        s2_inc_1: "Build, test, deploy commands", s2_inc_2: "Code style rules differing from defaults",
+        s2_inc_3: "Repository conventions", s2_inc_4: "Architecture decisions",
+        s2_inc_5: "Common gotchas", s2_inc_6: "Required environment variables",
+        s2_exc_1: "Standard conventions Claude knows", s2_exc_2: "Info derivable from reading code",
+        s2_exc_3: "Long tutorials or explanations", s2_exc_4: "Frequently changing data",
+        s2_exc_5: "Detailed API docs (link instead)", s2_exc_6: "Self-evident practices",
+        s2_example: "Example CLAUDE.md",
+        s2_import: "Importing External Files",
+        s2_import_desc: 'Use <code>@path</code> syntax to reference other files, keeping CLAUDE.md concise:',
+        s2_callout_label: "Best Practice:",
+        s2_callout_text: 'Keep CLAUDE.md under 200 lines. Longer files consume more context and reduce adherence. Split into <code>.claude/rules/</code> when it grows.',
+        s3_title: "Settings Configuration",
+        s3_desc: "Settings control permissions, hooks, environment variables, and behavior. They follow a priority hierarchy:",
+        s3_cli: "1. CLI Flags (Highest)", s3_local: "2. Local Settings", s3_project: "3. Project Settings", s3_user: "4. User Settings (Lowest)",
+        s3_project_example: "Project Settings Example", s3_user_example: "User Settings Example",
+        s3_tip_label: "Tip:", s3_tip_text: 'Use <code>settings.local.json</code> for machine-specific overrides you don\'t want to commit (API keys, personal preferences).',
+        s4_title: "Custom Skills (Slash Commands)",
+        s4_desc: 'Skills are markdown files that create custom <code>/commands</code>. They extend Claude with domain-specific workflows.',
+        s4_create: "How to Create a Skill",
+        s4_step1_title: "Create the directory", s4_step1_desc: "for project or", s4_step1_desc2: "for personal",
+        s4_step2_title: "Write SKILL.md", s4_step2_desc: "Add YAML frontmatter + markdown instructions",
+        s4_step3_title: "Test it", s4_step3_desc: 'Invoke with <code>/my-skill</code> or <code>/my-skill &lt;arguments&gt;</code>',
+        s4_format: "SKILL.md Format",
+        s4_frontmatter: "Frontmatter Reference",
+        th_field: "Field", th_description: "Description",
+        s4_f_name: "Slash command name (lowercase, hyphens)",
+        s4_f_desc: "What it does — Claude uses this for auto-invocation",
+        s4_f_hint: "Hint shown in autocomplete",
+        s4_f_invocable: '<code>true</code>/<code>false</code> — show in <code>/</code> menu',
+        s4_f_disable: '<code>true</code> — only manual invocation',
+        s4_f_tools: "Comma-separated tool whitelist",
+        s4_f_model: '<code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code>',
+        s4_f_context: '<code>fork</code> — run in isolated subagent',
+        s4_f_agent: 'Subagent type when <code>context: fork</code>',
+        s4_f_paths: "Glob patterns — only auto-load for matching files",
+        s4_args: "Using Arguments",
+        s4_invoke: "Invoke:",
+        s4_args_all: "All arguments as a single string",
+        s4_args_pos: "Positional arguments (0-indexed)",
+        s4_dynamic: "Dynamic Context &amp; Subagent Execution",
+        s4_dynamic_desc: 'Shell commands in <code>!`command`</code> run before Claude sees the skill. The <code>context: fork</code> runs it in an isolated subagent.',
+        s4_dir_structure: "Skill Directory Structure",
+        s5_title: "Subagents",
+        s5_desc: "Subagents are specialized AI assistants that run in isolated contexts with their own system prompt, tools, and model. Claude delegates tasks to them automatically.",
+        s5_builtin: "Built-in Subagents",
+        s5_explore: "Read-only. Fast codebase search and analysis without modifications.",
+        s5_plan: "Read-only. Research and plan before implementation.",
+        s5_general: "All tools. Complex multi-step tasks requiring full access.",
+        s5_create: "Creating a Custom Subagent", s5_create_desc: "Create",
+        s5_frontmatter: "Frontmatter Reference",
+        s5_f_name: "Unique identifier (lowercase, hyphens)",
+        s5_f_desc: "When Claude should delegate to this agent",
+        s5_f_tools: "Allowed tools (allowlist)",
+        s5_f_disallowed: "Tools to deny (denylist)",
+        s5_f_model: '<code>sonnet</code>, <code>opus</code>, <code>haiku</code>, or <code>inherit</code>',
+        s5_f_perm: '<code>default</code>, <code>acceptEdits</code>, <code>dontAsk</code>, <code>bypassPermissions</code>',
+        s5_f_turns: "Max agentic turns before stopping",
+        s5_f_memory: '<code>user</code>, <code>project</code>, or <code>local</code>',
+        s5_f_bg: '<code>true</code> — always run as background task',
+        s5_f_isolation: '<code>worktree</code> — run in isolated git worktree',
+        s5_invoking: "Invoking Subagents",
+        s5_invoke_natural: "Natural Language",
+        s5_invoke_natural_desc: 'Claude decides: "Use the code-reviewer to check my changes"',
+        s5_invoke_mention: "@-Mention",
+        s5_invoke_mention_desc: "Guaranteed:",
+        s5_invoke_session: "Session-wide",
+        s5_examples: "Example Subagents",
+        s5_ex_debugger: "Debugger (can edit and fix)",
+        s5_ex_researcher: "Read-Only Researcher",
+        s5_ex_db: "Database Analyst (with hooks)",
+        s5_callout_label: "Persistent Memory:",
+        s5_callout_text: 'Add <code>memory: project</code> to your agent frontmatter so it accumulates knowledge across sessions at <code>.claude/agent-memory/&lt;name&gt;/</code>.',
+        s6_title: "Hooks",
+        s6_desc: 'Hooks are shell commands that execute at specific lifecycle points. Unlike CLAUDE.md instructions which are advisory, hooks provide <strong>deterministic control</strong> — they always execute.',
+        s6_events: "Hook Events",
+        th_event: "Event", th_when: "When it fires", th_block: "Can Block?",
+        s6_e_session: "Session begins or resumes",
+        s6_e_prompt: "Before processing your prompt",
+        s6_e_pre: "Before a tool executes", s6_e_pre_block: "Yes (exit 2)",
+        s6_e_post: "After a tool succeeds",
+        s6_e_fail: "After a tool fails",
+        s6_e_notif: "Claude needs your attention",
+        s6_e_stop: "Claude finishes responding",
+        s6_e_substart: "Subagent starts", s6_e_substop: "Subagent finishes",
+        no: "No", yes: "Yes",
+        s6_config: "Configuration",
+        s6_exit: "Exit Codes",
+        s6_exit0: "Action proceeds. Stdout injected as context.",
+        s6_exit2: "Action blocked. Stderr shown as feedback.",
+        s6_other: "Other",
+        s6_exit_other: "Action proceeds. Stderr logged only.",
+        s6_protect: "Example: Protect Files",
+        s6_format: "Example: Auto-Format After Edits",
+        s6_types: "Hook Types",
+        s6_type_cmd: "Run a shell command",
+        s6_type_prompt: "Single LLM call (no tools)",
+        s6_type_agent: "Full subagent execution",
+        s6_type_http: "POST to HTTP endpoint",
+        s7_title: "MCP Servers",
+        s7_desc: "The Model Context Protocol connects Claude to external tools and services — databases, APIs, GitHub, Slack, and more.",
+        s7_config: "Configuration",
+        s7_config_desc: "Place in", s7_config_desc2: "(project) or", s7_config_desc3: "(user):",
+        s7_types: "Server Types",
+        s7_stdio: "Local process via stdin/stdout — CLI tools, npm packages",
+        s7_http: "HTTP POST — remote servers, cloud services",
+        s7_sse: "Server-Sent Events — real-time data streams",
+        s7_ws: "WebSocket — persistent bidirectional connections",
+        s7_callout_label: "Scope:",
+        s7_callout_text: 'Project MCP (<code>.claude/.mcp.json</code>) is shared with the team. User MCP (<code>~/.claude/.mcp.json</code>) applies to all your projects. You can also scope MCP servers to specific subagents via their frontmatter.',
+        s8_title: "Rules (Modular Instructions)",
+        s8_desc: 'Rules let you split CLAUDE.md into topic-specific files. They live in <code>.claude/rules/</code> and can be path-specific.',
+        s8_path: "Path-Specific Rules",
+        s8_path_desc: 'Add <code>paths</code> frontmatter to only load rules when Claude works with matching files:',
+        s8_callout_label: "When to use rules vs. CLAUDE.md:",
+        s8_callout_text: "Use CLAUDE.md for universal project instructions. Use rules for domain-specific instructions that only apply to certain areas of the codebase.",
+        s9_title: "Memory System",
+        s9_desc: "Claude's auto memory accumulates knowledge across sessions — build commands, patterns, debugging insights, and workflow habits.",
+        s9_storage: "Storage Location",
+        s9_types: "Memory Types",
+        s9_user: "User's role, preferences, knowledge level",
+        s9_feedback: "Corrections and confirmed approaches",
+        s9_project: "Ongoing work, goals, decisions",
+        s9_reference: "Pointers to external resources",
+        s9_format: "Memory File Format",
+        s9_toggle: "Enable / Disable",
+        s9_callout_label: "Auto memory vs. CLAUDE.md:",
+        s9_callout_text: "CLAUDE.md is written by you with explicit instructions. Auto memory is written by Claude to remember learnings. Both load at session start, but CLAUDE.md is your source of truth.",
+        s10_title: "Setup Checklist",
+        s10_desc: "Use this checklist when setting up Claude Code for a new project:",
+        s10_c1: 'Write <code>CLAUDE.md</code> with build commands, code style, and conventions',
+        s10_c2: 'Configure <code>.claude/settings.json</code> with permissions and hooks',
+        s10_c3: 'Create skills in <code>.claude/skills/</code> for reusable workflows',
+        s10_c4: 'Create subagents in <code>.claude/agents/</code> for specialized tasks',
+        s10_c5: "Set up hooks for automation (lint, format, protect files)",
+        s10_c6: 'Connect MCP servers in <code>.claude/.mcp.json</code>',
+        s10_c7: 'Add <code>.claude/rules/</code> for modular, path-specific instructions',
+        s10_c8: "Commit to git: CLAUDE.md, settings.json, skills/, agents/, rules/",
+        s10_c9: 'Gitignore: <code>settings.local.json</code>, <code>agent-memory-local/</code>',
+        s10_gitignore: ".gitignore Additions",
+        s10_reference: "Quick Reference — All File Paths",
+        th_path: "Path", th_purpose: "Purpose", th_share: "Share?",
+        s10_r1: "Project instructions", s10_r2: "Project settings", s10_r3: "Local overrides",
+        s10_r4: "MCP servers", s10_r5: "Custom commands", s10_r6: "Custom subagents",
+        s10_r7: "Modular rules", s10_r8: "Hook scripts", s10_r9: "Subagent memory",
+        s10_r9_share: "Optional",
+        s10_r10: "User settings", s10_r11: "Personal instructions", s10_r12: "Auto memory"
+      },
+      sr: {
+        subtitle: "Vodic za najbolje prakse",
+        nav_structure: "Struktura projekta",
+        nav_claudemd: "CLAUDE.md",
+        nav_settings: "Podesavanja",
+        nav_skills: "Vestine",
+        nav_subagents: "Podagenti",
+        nav_hooks: "Kukice",
+        nav_mcp: "MCP Serveri",
+        nav_rules: "Pravila",
+        nav_memory: "Memorija",
+        nav_checklist: "Kontrolna lista",
+        theme_toggle: "Promeni temu",
+        hero_title: "Najbolje prakse",
+        hero_desc: 'Sve sto vam je potrebno da podesite <code>.claude/</code> folder, napisete efektivna uputstva, kreirate vestine i podagente, i strukturirate projekat za optimalne rezultate.',
+        section_1: "Sekcija 1", section_2: "Sekcija 2", section_3: "Sekcija 3", section_4: "Sekcija 4", section_5: "Sekcija 5",
+        section_6: "Sekcija 6", section_7: "Sekcija 7", section_8: "Sekcija 8", section_9: "Sekcija 9", section_10: "Sekcija 10",
+        s1_title: "Struktura projekta",
+        s1_desc: 'Dobro organizovan <code>.claude/</code> direktorijum je osnova efektivnog koriscenja Claude Code-a. Evo preporucenog rasporeda:',
+        s1_user_config: "Konfiguracija na nivou korisnika",
+        s1_user_config_desc: 'Globalna podesavanja koja se primenjuju na sve vase projekte nalaze se u <code>~/.claude/</code>:',
+        s1_callout_label: "Kljucni princip:",
+        s1_callout_text: 'Konfiguracija na nivou projekta (<code>.claude/</code>) se deli sa timom preko git-a. Konfiguracija na nivou korisnika (<code>~/.claude/</code>) je licna i ostaje na vasoj masini.',
+        s2_title: "CLAUDE.md — Uputstva za projekat",
+        s2_desc: "CLAUDE.md se ucitava na pocetku svake sesije. Pruza trajna uputstva koja dosledno usmeravaju ponasanje Claude-a kroz razgovore.",
+        s2_placement: "Hijerarhija lokacija",
+        th_location: "Lokacija", th_scope: "Opseg", th_shared: "Deljeno?",
+        s2_scope_all: "Svi vasi projekti", s2_shared_no: "Ne",
+        s2_scope_root: "Koren projekta", s2_shared_git: "Da (preko git-a)",
+        s2_scope_sub: "Poddirektorijum", s2_shared_demand: "Ucitava se po potrebi",
+        s2_include_exclude: "Sta ukljuciti a sta izostaviti",
+        label_include: "UKLJUCITI", label_exclude: "IZOSTAVITI",
+        s2_inc_1: "Komande za build, testiranje, deploy", s2_inc_2: "Pravila stila koda koja se razlikuju od podrazumevanih",
+        s2_inc_3: "Konvencije repozitorijuma", s2_inc_4: "Arhitektonske odluke",
+        s2_inc_5: "Ceste zamke", s2_inc_6: "Potrebne environment varijable",
+        s2_exc_1: "Standardne konvencije koje Claude poznaje", s2_exc_2: "Informacije koje se mogu izvuci iz koda",
+        s2_exc_3: "Dugacki tutorijali ili objasnjenja", s2_exc_4: "Podaci koji se cesto menjaju",
+        s2_exc_5: "Detaljna API dokumentacija (linkujte umesto toga)", s2_exc_6: "Ocigledne prakse",
+        s2_example: "Primer CLAUDE.md",
+        s2_import: "Uvoz eksternih fajlova",
+        s2_import_desc: 'Koristite <code>@putanja</code> sintaksu za referenciranje drugih fajlova, odrzavajuci CLAUDE.md sazetim:',
+        s2_callout_label: "Najbolja praksa:",
+        s2_callout_text: 'Drzite CLAUDE.md ispod 200 linija. Duzi fajlovi trose vise konteksta i smanjuju pridrzavanje. Podelite u <code>.claude/rules/</code> kada poraste.',
+        s3_title: "Konfiguracija podesavanja",
+        s3_desc: "Podesavanja kontrolisu dozvole, kukice, environment varijable i ponasanje. Prate hijerarhiju prioriteta:",
+        s3_cli: "1. CLI zastavice (Najvisci)", s3_local: "2. Lokalna podesavanja", s3_project: "3. Podesavanja projekta", s3_user: "4. Korisnicka podesavanja (Najnizi)",
+        s3_project_example: "Primer podesavanja projekta", s3_user_example: "Primer korisnickih podesavanja",
+        s3_tip_label: "Savet:", s3_tip_text: 'Koristite <code>settings.local.json</code> za lokalne izmene koje ne zelite da komitujete (API kljucevi, licne preferencije).',
+        s4_title: "Prilagodene vestine (Slash komande)",
+        s4_desc: 'Vestine su markdown fajlovi koji kreiraju prilagodene <code>/komande</code>. Prosiruju Claude sa radnim tokovima specificnim za domen.',
+        s4_create: "Kako kreirati vestinu",
+        s4_step1_title: "Kreirajte direktorijum", s4_step1_desc: "za projekat ili", s4_step1_desc2: "za licno",
+        s4_step2_title: "Napisite SKILL.md", s4_step2_desc: "Dodajte YAML zaglavlje + markdown uputstva",
+        s4_step3_title: "Testirajte", s4_step3_desc: 'Pozovite sa <code>/moja-vestina</code> ili <code>/moja-vestina &lt;argumenti&gt;</code>',
+        s4_format: "Format SKILL.md",
+        s4_frontmatter: "Referenca zaglavlja",
+        th_field: "Polje", th_description: "Opis",
+        s4_f_name: "Naziv slash komande (mala slova, crtice)",
+        s4_f_desc: "Sta radi — Claude ovo koristi za automatsko pozivanje",
+        s4_f_hint: "Nagovestaj prikazan u autokomplit-u",
+        s4_f_invocable: '<code>true</code>/<code>false</code> — prikazati u <code>/</code> meniju',
+        s4_f_disable: '<code>true</code> — samo rucno pozivanje',
+        s4_f_tools: "Lista dozvoljenih alata razdvojena zarezima",
+        s4_f_model: '<code>sonnet</code>, <code>opus</code>, <code>haiku</code>, ili <code>inherit</code>',
+        s4_f_context: '<code>fork</code> — pokreni u izolovanom podagentu',
+        s4_f_agent: 'Tip podagenta kada je <code>context: fork</code>',
+        s4_f_paths: "Glob obrasci — automatski ucitaj samo za odgovarajuce fajlove",
+        s4_args: "Koriscenje argumenata",
+        s4_invoke: "Poziv:",
+        s4_args_all: "Svi argumenti kao jedan string",
+        s4_args_pos: "Pozicioni argumenti (indeks od 0)",
+        s4_dynamic: "Dinamicki kontekst i izvrsavanje podagenta",
+        s4_dynamic_desc: 'Shell komande u <code>!`komanda`</code> se pokrecu pre nego sto Claude vidi vestinu. <code>context: fork</code> je pokrece u izolovanom podagentu.',
+        s4_dir_structure: "Struktura direktorijuma vestine",
+        s5_title: "Podagenti",
+        s5_desc: "Podagenti su specijalizovani AI asistenti koji rade u izolovanim kontekstima sa sopstvenim sistemskim promptom, alatima i modelom. Claude im automatski delegira zadatke.",
+        s5_builtin: "Ugradeni podagenti",
+        s5_explore: "Samo citanje. Brza pretraga i analiza baze koda bez modifikacija.",
+        s5_plan: "Samo citanje. Istrazivanje i planiranje pre implementacije.",
+        s5_general: "Svi alati. Slozeni visestepeni zadaci koji zahtevaju pun pristup.",
+        s5_create: "Kreiranje prilagodenog podagenta", s5_create_desc: "Kreirajte",
+        s5_frontmatter: "Referenca zaglavlja",
+        s5_f_name: "Jedinstveni identifikator (mala slova, crtice)",
+        s5_f_desc: "Kada Claude treba da delegira ovom agentu",
+        s5_f_tools: "Dozvoljeni alati (lista dozvola)",
+        s5_f_disallowed: "Zabranjeni alati (lista zabrana)",
+        s5_f_model: '<code>sonnet</code>, <code>opus</code>, <code>haiku</code>, ili <code>inherit</code>',
+        s5_f_perm: '<code>default</code>, <code>acceptEdits</code>, <code>dontAsk</code>, <code>bypassPermissions</code>',
+        s5_f_turns: "Maksimalan broj agentskih koraka pre zaustavljanja",
+        s5_f_memory: '<code>user</code>, <code>project</code>, ili <code>local</code>',
+        s5_f_bg: '<code>true</code> — uvek pokreni kao pozadinski zadatak',
+        s5_f_isolation: '<code>worktree</code> — pokreni u izolovanom git worktree-u',
+        s5_invoking: "Pozivanje podagenata",
+        s5_invoke_natural: "Prirodni jezik",
+        s5_invoke_natural_desc: 'Claude odlucuje: "Koristi code-reviewer da proveris moje izmene"',
+        s5_invoke_mention: "@-Pominjanje",
+        s5_invoke_mention_desc: "Garantovano:",
+        s5_invoke_session: "Na nivou sesije",
+        s5_examples: "Primeri podagenata",
+        s5_ex_debugger: "Debager (moze da menja i popravlja)",
+        s5_ex_researcher: "Istrazivac samo za citanje",
+        s5_ex_db: "Analiticar baze podataka (sa kukicama)",
+        s5_callout_label: "Trajna memorija:",
+        s5_callout_text: 'Dodajte <code>memory: project</code> u zaglavlje agenta da bi akumulirao znanje kroz sesije na <code>.claude/agent-memory/&lt;name&gt;/</code>.',
+        s6_title: "Kukice",
+        s6_desc: 'Kukice su shell komande koje se izvrsavaju u odredenim tackama zivotnog ciklusa. Za razliku od CLAUDE.md uputstava koja su savetodavna, kukice pruzaju <strong>deterministicku kontrolu</strong> — uvek se izvrsavaju.',
+        s6_events: "Dogadaji kukica",
+        th_event: "Dogadaj", th_when: "Kada se aktivira", th_block: "Moze blokirati?",
+        s6_e_session: "Sesija pocinje ili se nastavlja",
+        s6_e_prompt: "Pre obrade vaseg prompta",
+        s6_e_pre: "Pre izvrsavanja alata", s6_e_pre_block: "Da (exit 2)",
+        s6_e_post: "Nakon uspesnog izvrsavanja alata",
+        s6_e_fail: "Nakon neuspesnog izvrsavanja alata",
+        s6_e_notif: "Claude zahteva vasu paznju",
+        s6_e_stop: "Claude zavrsi odgovor",
+        s6_e_substart: "Podagent zapocinje", s6_e_substop: "Podagent zavrsava",
+        no: "Ne", yes: "Da",
+        s6_config: "Konfiguracija",
+        s6_exit: "Izlazni kodovi",
+        s6_exit0: "Akcija se nastavlja. Stdout se ubacuje kao kontekst.",
+        s6_exit2: "Akcija blokirana. Stderr prikazan kao povratna informacija.",
+        s6_other: "Ostalo",
+        s6_exit_other: "Akcija se nastavlja. Stderr se samo belezi.",
+        s6_protect: "Primer: Zastita fajlova",
+        s6_format: "Primer: Automatsko formatiranje nakon izmena",
+        s6_types: "Tipovi kukica",
+        s6_type_cmd: "Pokretanje shell komande",
+        s6_type_prompt: "Jedan LLM poziv (bez alata)",
+        s6_type_agent: "Potpuno izvrsavanje podagenta",
+        s6_type_http: "POST ka HTTP endpointu",
+        s7_title: "MCP Serveri",
+        s7_desc: "Model Context Protocol povezuje Claude sa eksternim alatima i servisima — bazama podataka, API-jevima, GitHub-om, Slack-om i ostalim.",
+        s7_config: "Konfiguracija",
+        s7_config_desc: "Postavite u", s7_config_desc2: "(projekat) ili", s7_config_desc3: "(korisnik):",
+        s7_types: "Tipovi servera",
+        s7_stdio: "Lokalni proces preko stdin/stdout — CLI alati, npm paketi",
+        s7_http: "HTTP POST — udaljeni serveri, cloud servisi",
+        s7_sse: "Server-Sent Events — tokovi podataka u realnom vremenu",
+        s7_ws: "WebSocket — trajne bidirekcione konekcije",
+        s7_callout_label: "Opseg:",
+        s7_callout_text: 'Projektni MCP (<code>.claude/.mcp.json</code>) se deli sa timom. Korisnicki MCP (<code>~/.claude/.mcp.json</code>) se primenjuje na sve vase projekte. Takode mozete ograniciti MCP servere na odredene podagente kroz njihovo zaglavlje.',
+        s8_title: "Pravila (Modularna uputstva)",
+        s8_desc: 'Pravila vam omogucavaju da podelite CLAUDE.md na tematske fajlove. Nalaze se u <code>.claude/rules/</code> i mogu biti specificna za putanju.',
+        s8_path: "Pravila specificna za putanju",
+        s8_path_desc: 'Dodajte <code>paths</code> zaglavlje da se pravila ucitavaju samo kada Claude radi sa odgovarajucim fajlovima:',
+        s8_callout_label: "Kada koristiti pravila vs. CLAUDE.md:",
+        s8_callout_text: "Koristite CLAUDE.md za univerzalna uputstva projekta. Koristite pravila za uputstva specificna za domen koja se primenjuju samo na odredene delove baze koda.",
+        s9_title: "Sistem memorije",
+        s9_desc: "Automatska memorija Claude-a akumulira znanje kroz sesije — build komande, obrasce, uvide u debagovanje i navike u radu.",
+        s9_storage: "Lokacija skladistenja",
+        s9_types: "Tipovi memorije",
+        s9_user: "Uloga korisnika, preferencije, nivo znanja",
+        s9_feedback: "Korekcije i potvrdeni pristupi",
+        s9_project: "Tekuci rad, ciljevi, odluke",
+        s9_reference: "Pokazivaci ka eksternim resursima",
+        s9_format: "Format fajla memorije",
+        s9_toggle: "Ukljuci / Iskljuci",
+        s9_callout_label: "Automatska memorija vs. CLAUDE.md:",
+        s9_callout_text: "CLAUDE.md pisete vi sa eksplicitnim uputstvima. Automatsku memoriju pise Claude da zapamti nauceno. Oba se ucitavaju na pocetku sesije, ali CLAUDE.md je vas izvor istine.",
+        s10_title: "Kontrolna lista za podesavanje",
+        s10_desc: "Koristite ovu kontrolnu listu kada podesavate Claude Code za novi projekat:",
+        s10_c1: 'Napisite <code>CLAUDE.md</code> sa build komandama, stilom koda i konvencijama',
+        s10_c2: 'Konfiguriste <code>.claude/settings.json</code> sa dozvolama i kukicama',
+        s10_c3: 'Kreirajte vestine u <code>.claude/skills/</code> za ponovljive radne tokove',
+        s10_c4: 'Kreirajte podagente u <code>.claude/agents/</code> za specijalizovane zadatke',
+        s10_c5: "Podesite kukice za automatizaciju (lint, format, zastita fajlova)",
+        s10_c6: 'Povezite MCP servere u <code>.claude/.mcp.json</code>',
+        s10_c7: 'Dodajte <code>.claude/rules/</code> za modularna uputstva specificna za putanju',
+        s10_c8: "Komitujte u git: CLAUDE.md, settings.json, skills/, agents/, rules/",
+        s10_c9: 'Gitignore: <code>settings.local.json</code>, <code>agent-memory-local/</code>',
+        s10_gitignore: "Dodaci za .gitignore",
+        s10_reference: "Brza referenca — Sve putanje fajlova",
+        th_path: "Putanja", th_purpose: "Namena", th_share: "Deljeno?",
+        s10_r1: "Uputstva projekta", s10_r2: "Podesavanja projekta", s10_r3: "Lokalne izmene",
+        s10_r4: "MCP serveri", s10_r5: "Prilagodene komande", s10_r6: "Prilagodeni podagenti",
+        s10_r7: "Modularna pravila", s10_r8: "Skripte kukica", s10_r9: "Memorija podagenta",
+        s10_r9_share: "Opciono",
+        s10_r10: "Korisnicka podesavanja", s10_r11: "Licna uputstva", s10_r12: "Automatska memorija"
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'en';
+
+    function applyTranslations(lang) {
+      const t = translations[lang];
+      if (!t) return;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key] !== undefined) {
+          el.innerHTML = t[key];
+        }
+      });
+      document.documentElement.lang = lang === 'sr' ? 'sr' : 'en';
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'sr' : 'en';
+      localStorage.setItem('lang', currentLang);
+      document.getElementById('langBtn').textContent = currentLang === 'en' ? 'SRB' : 'ENG';
+      applyTranslations(currentLang);
+    }
+
     // Theme toggle
     function toggleTheme() {
       const body = document.body;
@@ -1450,6 +1845,12 @@ New to the React frontend of this project.</code></pre>
     if (saved) document.body.setAttribute('data-theme', saved);
     else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.body.setAttribute('data-theme', 'dark');
+    }
+
+    // Load saved language
+    if (currentLang === 'sr') {
+      document.getElementById('langBtn').textContent = 'ENG';
+      applyTranslations('sr');
     }
 
     // Active nav highlighting on scroll
