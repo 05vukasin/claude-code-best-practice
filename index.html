@@ -669,6 +669,11 @@
         <a href="#rules"><span class="nav-num">8</span> <span data-i18n="nav_rules">Rules</span></a>
         <a href="#memory"><span class="nav-num">9</span> <span data-i18n="nav_memory">Memory</span></a>
         <a href="#checklist"><span class="nav-num">10</span> <span data-i18n="nav_checklist">Checklist</span></a>
+        <a href="#ci-cd"><span class="nav-num">11</span> <span data-i18n="nav_cicd">CI/CD Workflows</span></a>
+        <a href="#testing"><span class="nav-num">12</span> <span data-i18n="nav_testing">Unit Testing</span></a>
+        <a href="#self-eval"><span class="nav-num">13</span> <span data-i18n="nav_selfeval">Self-Evaluation</span></a>
+        <a href="#review-pipeline"><span class="nav-num">14</span> <span data-i18n="nav_review">Review Pipeline</span></a>
+        <a href="#git-strategy"><span class="nav-num">15</span> <span data-i18n="nav_git">Branch Protection</span></a>
       </nav>
       <div class="sidebar-footer">
         <span style="font-size:12px;color:var(--text-secondary)">v1.0</span>
@@ -1445,6 +1450,634 @@ New to the React frontend of this project.</code></pre>
         </div>
       </section>
 
+      <!-- 11. CI/CD Workflows -->
+      <section class="section" id="ci-cd">
+        <div class="section-label" data-i18n="section_11">Section 11</div>
+        <h2 data-i18n="s11_title">CI/CD Workflows</h2>
+        <p data-i18n="s11_desc">Integrate Claude Code into your continuous integration and delivery pipelines. Use <code>claude -p</code> (print mode) to run Claude non-interactively in CI environments for automated code review, test generation, and more.</p>
+
+        <h3 data-i18n="s11_overview">How CI/CD Works with Claude</h3>
+        <p data-i18n="s11_overview_desc">The key to CI integration is <code>claude -p</code> — print mode runs Claude non-interactively, reads from stdin or arguments, and outputs to stdout. No human interaction needed.</p>
+        <div class="callout">
+          <strong data-i18n="s11_callout_label">Key:</strong>
+          <span data-i18n="s11_callout_text"><code>claude -p "your prompt"</code> runs non-interactively. Combine with <code>--model</code> to control which model is used. All output goes to stdout for piping and capture.</span>
+        </div>
+
+        <h3 data-i18n="s11_env">Environment Variables</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th data-i18n="th_variable">Variable</th><th data-i18n="th_description">Description</th><th data-i18n="th_required">Required?</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>ANTHROPIC_API_KEY</code></td><td data-i18n="s11_env_key_desc">API key for authenticating with Claude</td><td data-i18n="yes">Yes</td></tr>
+              <tr><td><code>CLAUDE_MODEL</code></td><td data-i18n="s11_env_model_desc">Override model (e.g., haiku for faster CI)</td><td data-i18n="no">No</td></tr>
+              <tr><td><code>CI</code></td><td data-i18n="s11_env_ci_desc">Auto-set by most CI providers, signals non-interactive mode</td><td data-i18n="s11_env_auto">Auto-set</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 data-i18n="s11_github">GitHub Actions Workflow</h3>
+        <pre><code>name: Claude Code Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run Claude Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Review the changes in this PR.
+          Run git diff origin/main...HEAD and provide
+          feedback on code quality, security, and
+          performance." &gt; review.md
+
+      - name: Post Review Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const review = fs.readFileSync('review.md', 'utf8');
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Claude Code Review\n\n${review}`
+            });</code></pre>
+
+        <h3 data-i18n="s11_bitbucket">Bitbucket Pipelines</h3>
+        <pre><code>image: node:20
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Claude Code Review
+          caches:
+            - node
+          script:
+            - npm install -g @anthropic-ai/claude-code
+            - export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+            - claude -p "Review changes in this PR.
+              Run git diff origin/main...HEAD.
+              Report issues with severity." &gt; review.md
+            - cat review.md</code></pre>
+
+        <h3 data-i18n="s11_patterns">Common CI Patterns</h3>
+        <div class="grid-2">
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s11_pat_review">PR Review</div>
+            <div class="mc-desc" data-i18n="s11_pat_review_desc">Auto-review every pull request for quality, security, and best practices</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s11_pat_test">Test Generation</div>
+            <div class="mc-desc" data-i18n="s11_pat_test_desc">Generate missing unit tests for changed files on every PR</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s11_pat_docs">Docs Update</div>
+            <div class="mc-desc" data-i18n="s11_pat_docs_desc">Automatically update documentation when code changes</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s11_pat_lint">Smart Lint Fix</div>
+            <div class="mc-desc" data-i18n="s11_pat_lint_desc">Auto-fix lint issues and push corrections as a new commit</div>
+          </div>
+        </div>
+
+        <h3 data-i18n="s11_tips">CI Best Practices</h3>
+        <div class="do-dont">
+          <div class="do-box">
+            <div class="label" data-i18n="label_do">DO</div>
+            <ul>
+              <li data-i18n="s11_do_1">Use <code>claude -p</code> for all CI commands (non-interactive)</li>
+              <li data-i18n="s11_do_2">Set timeout limits on CI steps (5-10 min)</li>
+              <li data-i18n="s11_do_3">Cache the <code>npm install</code> of <code>@anthropic-ai/claude-code</code></li>
+              <li data-i18n="s11_do_4">Use <code>--model haiku</code> for faster, cheaper CI runs</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <div class="label" data-i18n="label_dont">DON'T</div>
+            <ul>
+              <li data-i18n="s11_dont_1">Don't use interactive mode in CI (it will hang)</li>
+              <li data-i18n="s11_dont_2">Don't hardcode API keys in workflow files</li>
+              <li data-i18n="s11_dont_3">Don't skip <code>fetch-depth: 0</code> (Claude needs git history)</li>
+              <li data-i18n="s11_dont_4">Don't run on every commit — use PR triggers instead</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12. Unit Testing -->
+      <section class="section" id="testing">
+        <div class="section-label" data-i18n="section_12">Section 12</div>
+        <h2 data-i18n="s12_title">Unit Testing with Claude</h2>
+        <p data-i18n="s12_desc">Tests are the single most impactful thing you can add to a project for Claude. They create a verification loop that lets Claude generate code, run tests, see failures, fix issues, and repeat — turning blind coding into evidence-based iteration.</p>
+
+        <h3 data-i18n="s12_why">Why Tests Improve Claude's Performance</h3>
+        <div class="callout">
+          <strong data-i18n="s12_why_callout_label">Feedback Loop:</strong>
+          <span data-i18n="s12_why_callout_text">Without tests, Claude operates blind — it writes code and hopes it works. With tests, Claude self-corrects: generate code, run tests, see failures, fix, repeat. This loop dramatically improves output quality.</span>
+        </div>
+
+        <h3 data-i18n="s12_workflow">Test-Driven Development Workflow</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-title" data-i18n="s12_step1_title">1. Write tests first</div>
+            <div class="step-desc" data-i18n="s12_step1_desc">Ask Claude to write failing tests for the feature you want to build. This defines the expected behavior before any code exists.</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s12_step2_title">2. Implement the feature</div>
+            <div class="step-desc" data-i18n="s12_step2_desc">Claude writes the actual code to make the tests pass. The tests guide the implementation.</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s12_step3_title">3. Run and verify</div>
+            <div class="step-desc" data-i18n="s12_step3_desc">Claude runs <code>npm test</code>, sees results, and iterates until all tests pass. Each failure provides specific, actionable feedback.</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s12_step4_title">4. Refactor with safety net</div>
+            <div class="step-desc" data-i18n="s12_step4_desc">Tests ensure refactoring doesn't break anything. Claude can confidently improve code knowing tests will catch regressions.</div>
+          </div>
+        </div>
+
+        <h3 data-i18n="s12_claudemd">CLAUDE.md Testing Instructions</h3>
+        <p data-i18n="s12_claudemd_desc">Add these to your CLAUDE.md to enforce testing standards:</p>
+        <pre><code>## Testing Standards
+- ALWAYS run `npm test` after making changes
+- Write tests BEFORE implementing features (TDD)
+- Minimum 80% code coverage for new code
+- Test command: `npm test -- --coverage`
+- Single test: `npm test -- --testPathPattern="filename"`
+- Never mock what you don't own
+- Every bug fix must include a regression test</code></pre>
+
+        <h3 data-i18n="s12_skill">Test Generation Skill</h3>
+        <pre><code>---
+name: generate-tests
+description: Generate comprehensive unit tests for a file
+argument-hint: &lt;file-path&gt;
+allowed-tools: Read, Grep, Glob, Bash, Edit
+---
+
+# Generate Unit Tests
+
+1. Read the source file: `$ARGUMENTS`
+2. Analyze exports, functions, edge cases
+3. Check existing tests in `__tests__/` or `*.test.*`
+4. Generate tests covering:
+   - Happy path for each function
+   - Edge cases (null, empty, boundary values)
+   - Error handling paths
+   - Integration between functions
+5. Run `npm test` to verify all tests pass
+6. Report coverage for the file</code></pre>
+
+        <h3 data-i18n="s12_agent">Test Review Subagent</h3>
+        <details>
+          <summary data-i18n="s12_agent_title">test-reviewer agent definition</summary>
+          <pre><code>---
+name: test-reviewer
+description: Review test quality and coverage
+tools: Read, Grep, Glob, Bash
+model: sonnet
+---
+
+You are a test quality reviewer. When invoked:
+1. Run `npm test -- --coverage`
+2. Identify files below 80% coverage
+3. Check test quality (not just coverage):
+   - Are edge cases tested?
+   - Are error paths covered?
+   - Are assertions meaningful (not just "toBeDefined")?
+4. Suggest specific missing test cases</code></pre>
+        </details>
+
+        <h3 data-i18n="s12_examples">Example Test Prompts</h3>
+        <div class="grid-2">
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s12_ex_gen">Generate Tests</div>
+            <div class="mc-desc" data-i18n="s12_ex_gen_desc">Write comprehensive tests for src/utils/parser.ts covering all edge cases</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s12_ex_tdd">TDD Approach</div>
+            <div class="mc-desc" data-i18n="s12_ex_tdd_desc">Write failing tests for a user authentication feature, then implement it</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s12_ex_fix">Fix + Regression Test</div>
+            <div class="mc-desc" data-i18n="s12_ex_fix_desc">Fix the bug in issue #42 and add a regression test that would have caught it</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s12_ex_cover">Improve Coverage</div>
+            <div class="mc-desc" data-i18n="s12_ex_cover_desc">Run coverage report and add tests for any file below 80%</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13. Self-Evaluation & Recursive Optimization -->
+      <section class="section" id="self-eval">
+        <div class="section-label" data-i18n="section_13">Section 13</div>
+        <h2 data-i18n="s13_title">Self-Evaluation &amp; Recursive Optimization</h2>
+        <p data-i18n="s13_desc">Make Claude evaluate and improve its own output. By combining CLAUDE.md instructions, hooks, and subagents, you can create a system where Claude automatically validates, reviews, and refines its work.</p>
+
+        <h3 data-i18n="s13_loop">The Recursive Improvement Loop</h3>
+        <div class="card">
+          <pre class="tree">
+  +--------------+     +--------------+     +--------------+
+  |  1. Generate |----&gt;|  2. Test     |----&gt;|  3. Evaluate |
+  |     Code     |     |   (run all)  |     |   Results    |
+  +--------------+     +--------------+     +------+-------+
+         ^                                         |
+         |             +--------------+            |
+         +-------------|  4. Fix &amp;    |&lt;-----------+
+                       |   Improve   |
+                       +--------------+</pre>
+        </div>
+
+        <h3 data-i18n="s13_claudemd">CLAUDE.md Self-Checking Instructions</h3>
+        <pre><code>## Self-Evaluation Rules
+- After EVERY code change, run the test suite
+- After EVERY file edit, run the linter on that file
+- If tests fail, fix them before reporting success
+- Before marking a task complete, verify:
+  1. All tests pass
+  2. No lint errors
+  3. No type errors (run tsc --noEmit)
+  4. The change actually solves the stated problem
+- NEVER say "done" without running verification</code></pre>
+
+        <h3 data-i18n="s13_hooks">Hooks for Automatic Validation</h3>
+        <p data-i18n="s13_hooks_desc">Use PostToolUse hooks to auto-validate after every edit, and Stop hooks to run final checks:</p>
+        <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx eslint --no-error-on-unmatched-pattern \"$(echo $TOOL_INPUT | jq -r '.file_path')\" 2&gt;&amp;1 || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm test 2&gt;&amp;1 | tail -20"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+        <h3 data-i18n="s13_subagent">Self-Review Subagent</h3>
+        <details>
+          <summary data-i18n="s13_subagent_title">self-reviewer agent definition</summary>
+          <pre><code>---
+name: self-reviewer
+description: Review and improve Claude's own output
+tools: Read, Grep, Glob, Bash
+model: opus
+maxTurns: 5
+---
+
+You are a critical self-reviewer. When invoked:
+1. Read all files changed in this session (git diff)
+2. For each change, evaluate:
+   - Does it correctly solve the original problem?
+   - Are there edge cases not handled?
+   - Is the code clean and idiomatic?
+   - Are there any security issues?
+3. Run the test suite and linter
+4. Fix any issues found
+5. Summarize what you improved</code></pre>
+        </details>
+
+        <h3 data-i18n="s13_patterns">Self-Evaluation Patterns</h3>
+        <div class="grid-2">
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s13_pat_verify">Verify Before Done</div>
+            <div class="mc-desc" data-i18n="s13_pat_verify_desc">Add "NEVER say done without running tests" to CLAUDE.md</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s13_pat_lint">Auto-Lint on Edit</div>
+            <div class="mc-desc" data-i18n="s13_pat_lint_desc">PostToolUse hook runs linter after every file edit automatically</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s13_pat_review">Self-Review Agent</div>
+            <div class="mc-desc" data-i18n="s13_pat_review_desc">Delegate to a separate subagent for objective, independent review</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s13_pat_iterate">Iterative Refinement</div>
+            <div class="mc-desc" data-i18n="s13_pat_iterate_desc">Ask Claude to improve its solution 2-3 times before finalizing</div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong data-i18n="s13_callout_label">Best Practice:</strong>
+          <span data-i18n="s13_callout_text">Combine hooks (deterministic validation) with CLAUDE.md instructions (behavioral guidance) for maximum reliability. Hooks catch what instructions might miss.</span>
+        </div>
+      </section>
+
+      <!-- 14. Multi-Layer Code Review Pipeline -->
+      <section class="section" id="review-pipeline">
+        <div class="section-label" data-i18n="section_14">Section 14</div>
+        <h2 data-i18n="s14_title">Multi-Layer Code Review Pipeline</h2>
+        <p data-i18n="s14_desc">Chain multiple specialized review agents for thorough, automated code review. Each layer focuses on a different aspect — quality, security, architecture, and performance — ensuring comprehensive coverage no single reviewer could achieve.</p>
+
+        <h3 data-i18n="s14_layers">The Four Layers</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th data-i18n="th_layer">Layer</th><th data-i18n="th_focus">Focus</th><th data-i18n="th_agent">Agent</th><th data-i18n="th_tools">Tools</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-i18n="s14_t_l1">1. Quality</td><td data-i18n="s14_t_l1_focus">Lint, format, code standards</td><td><code>quality-checker</code></td><td><code>Bash, Read</code></td></tr>
+              <tr><td data-i18n="s14_t_l2">2. Security</td><td data-i18n="s14_t_l2_focus">OWASP, dependency audit</td><td><code>security-auditor</code></td><td><code>Bash, Read, Grep</code></td></tr>
+              <tr><td data-i18n="s14_t_l3">3. Architecture</td><td data-i18n="s14_t_l3_focus">Patterns, coupling, design</td><td><code>arch-reviewer</code></td><td><code>Read, Grep, Glob</code></td></tr>
+              <tr><td data-i18n="s14_t_l4">4. Performance</td><td data-i18n="s14_t_l4_focus">Complexity, resource usage</td><td><code>perf-analyzer</code></td><td><code>Read, Bash, Grep</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 data-i18n="s14_layer1">Layer 1: Quality Check</h3>
+        <details>
+          <summary data-i18n="s14_layer1_title">quality-checker agent definition</summary>
+          <pre><code>---
+name: quality-checker
+description: Check code quality, lint, and formatting
+tools: Bash, Read, Grep
+model: haiku
+maxTurns: 3
+---
+
+Run quality checks on changed files:
+1. Get changed files: `git diff --name-only origin/main`
+2. Run ESLint: `npx eslint $(git diff --name-only origin/main -- '*.ts' '*.js')`
+3. Run Prettier: `npx prettier --check $(git diff --name-only origin/main -- '*.ts' '*.js')`
+4. Report: pass/fail per file, specific violations, auto-fixable count</code></pre>
+        </details>
+
+        <h3 data-i18n="s14_layer2">Layer 2: Security Review</h3>
+        <details>
+          <summary data-i18n="s14_layer2_title">security-auditor agent definition</summary>
+          <pre><code>---
+name: security-auditor
+description: Security review following OWASP guidelines
+tools: Bash, Read, Grep, Glob
+model: sonnet
+maxTurns: 5
+---
+
+Perform security review on all changes (git diff origin/main):
+1. Check for OWASP Top 10 vulnerabilities:
+   - Injection (SQL, command, XSS)
+   - Broken authentication patterns
+   - Sensitive data exposure (hardcoded secrets, API keys)
+   - Security misconfiguration
+2. Run `npm audit` for dependency vulnerabilities
+3. Check for unsafe patterns: eval(), innerHTML, dangerouslySetInnerHTML
+4. Verify input validation on all user inputs
+5. Rate each finding: Critical / High / Medium / Low</code></pre>
+        </details>
+
+        <h3 data-i18n="s14_layer3">Layer 3: Architecture Review</h3>
+        <details>
+          <summary data-i18n="s14_layer3_title">arch-reviewer agent definition</summary>
+          <pre><code>---
+name: arch-reviewer
+description: Review architecture patterns and design
+tools: Read, Grep, Glob
+model: sonnet
+maxTurns: 5
+---
+
+Review architectural quality of changes:
+1. Check for anti-patterns:
+   - God objects / classes &gt; 300 lines
+   - Circular dependencies
+   - Tight coupling between modules
+   - Violation of single responsibility
+2. Verify consistency with existing patterns
+3. Check import structure and module boundaries
+4. Flag any new dependencies and justify them
+5. Ensure changes follow the project's layered architecture</code></pre>
+        </details>
+
+        <h3 data-i18n="s14_layer4">Layer 4: Performance Review</h3>
+        <details>
+          <summary data-i18n="s14_layer4_title">perf-analyzer agent definition</summary>
+          <pre><code>---
+name: perf-analyzer
+description: Analyze performance implications of changes
+tools: Read, Bash, Grep
+model: sonnet
+maxTurns: 3
+---
+
+Analyze performance of changed code:
+1. Check algorithmic complexity (nested loops, O(n^2) patterns)
+2. Look for N+1 query patterns in database calls
+3. Identify unnecessary re-renders or recomputation
+4. Check for memory leaks (event listeners, unclosed resources)
+5. Verify async patterns (Promise.all vs sequential awaits)
+6. Flag any synchronous file I/O in hot paths</code></pre>
+        </details>
+
+        <h3 data-i18n="s14_pipeline">Chaining the Pipeline</h3>
+        <p data-i18n="s14_pipeline_desc">Create a skill that runs all four layers and compiles a final report:</p>
+        <pre><code>---
+name: full-review
+description: Run the complete 4-layer code review pipeline
+allowed-tools: Read, Grep, Glob, Bash
+context: fork
+---
+
+# Multi-Layer Code Review Pipeline
+
+Run each review layer and compile results:
+
+1. @quality-checker — Check lint, format, standards
+2. @security-auditor — OWASP security scan
+3. @arch-reviewer — Architecture patterns review
+4. @perf-analyzer — Performance analysis
+
+## Final Report Format
+For each layer, provide:
+- **Status**: PASS / WARN / FAIL
+- **Findings**: List of issues with severity
+- **Recommendations**: Specific fixes
+
+End with an overall score:
+  A (ship it) / B (minor fixes) / C (needs work) / D (major issues)</code></pre>
+
+        <h3 data-i18n="s14_ci">CI Integration</h3>
+        <p data-i18n="s14_ci_desc">Run the full pipeline on every PR in your CI workflow:</p>
+        <pre><code>- name: Full Code Review Pipeline
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  run: |
+    claude -p "/full-review" &gt; review-report.md</code></pre>
+
+        <div class="callout">
+          <strong data-i18n="s14_callout_label">Tip:</strong>
+          <span data-i18n="s14_callout_text">Use <code>haiku</code> for Layer 1 (fast, cheap linting) and <code>sonnet</code> for Layers 2-4 (requires deeper reasoning). This balances cost and quality across the pipeline.</span>
+        </div>
+      </section>
+
+      <!-- 15. Branch Protection & Git Strategy -->
+      <section class="section" id="git-strategy">
+        <div class="section-label" data-i18n="section_15">Section 15</div>
+        <h2 data-i18n="s15_title">Branch Protection &amp; Git Strategy</h2>
+        <p data-i18n="s15_desc">Establish safe git workflows when using Claude Code. Branch protection ensures that no code — human or AI-generated — reaches your main branch without passing all reviews and checks.</p>
+
+        <h3 data-i18n="s15_strategy">Branch Isolation Strategy</h3>
+        <div class="grid-3">
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s15_strat_feature">Feature Branches</div>
+            <div class="mc-desc" data-i18n="s15_strat_feature_desc">One branch per task. Claude works in isolation, never touching main directly.</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s15_strat_review">Review Branches</div>
+            <div class="mc-desc" data-i18n="s15_strat_review_desc">Separate branch for Claude's review changes and auto-fixes.</div>
+          </div>
+          <div class="mini-card">
+            <div class="mc-title" data-i18n="s15_strat_worktree">Git Worktrees</div>
+            <div class="mc-desc" data-i18n="s15_strat_worktree_desc">Use <code>isolation: worktree</code> for parallel agent work on separate copies.</div>
+          </div>
+        </div>
+
+        <h3 data-i18n="s15_workflow">Complete Workflow</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf1_title">1. Create feature branch</div>
+            <div class="step-desc"><code>git checkout -b feature/my-feature</code></div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf2_title">2. Work with Claude</div>
+            <div class="step-desc" data-i18n="s15_wf2_desc">Claude makes changes and commits to the feature branch</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf3_title">3. Push and open PR</div>
+            <div class="step-desc"><code>git push -u origin feature/my-feature &amp;&amp; gh pr create</code></div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf4_title">4. Automated Claude review</div>
+            <div class="step-desc" data-i18n="s15_wf4_desc">CI triggers <code>claude -p</code> to review the PR automatically</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf5_title">5. Address feedback</div>
+            <div class="step-desc" data-i18n="s15_wf5_desc">Fix issues from review, push again — CI re-runs automatically</div>
+          </div>
+          <div class="step">
+            <div class="step-title" data-i18n="s15_wf6_title">6. Merge after checks pass</div>
+            <div class="step-desc" data-i18n="s15_wf6_desc">All status checks green — merge to main with confidence</div>
+          </div>
+        </div>
+
+        <h3 data-i18n="s15_protection">GitHub Branch Protection Rules</h3>
+        <p data-i18n="s15_protection_desc">Configure via GitHub Settings &rarr; Branches &rarr; Add rule, or via CLI:</p>
+        <pre><code># Using GitHub CLI to set branch protection
+gh api repos/{owner}/{repo}/branches/main/protection \
+  --method PUT \
+  --field "required_status_checks[strict]=true" \
+  --field "required_status_checks[contexts][]=claude-review" \
+  --field "required_status_checks[contexts][]=tests" \
+  --field "enforce_admins=true" \
+  --field "required_pull_request_reviews[required_approving_review_count]=1" \
+  --field "required_pull_request_reviews[dismiss_stale_reviews]=true" \
+  --field "restrictions=null"</code></pre>
+
+        <h3 data-i18n="s15_rules">Recommended Protection Rules</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th data-i18n="th_rule">Rule</th><th data-i18n="th_setting">Setting</th><th data-i18n="th_why">Why</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-i18n="s15_r1_rule">Require PR before merge</td><td data-i18n="s15_r1_set">Enabled</td><td data-i18n="s15_r1_why">Prevents direct pushes to main</td></tr>
+              <tr><td data-i18n="s15_r2_rule">Required status checks</td><td><code>claude-review, tests</code></td><td data-i18n="s15_r2_why">Ensures Claude review + tests pass</td></tr>
+              <tr><td data-i18n="s15_r3_rule">Strict status checks</td><td data-i18n="s15_r3_set">Enabled</td><td data-i18n="s15_r3_why">Branch must be up-to-date before merge</td></tr>
+              <tr><td data-i18n="s15_r4_rule">Dismiss stale reviews</td><td data-i18n="s15_r4_set">Enabled</td><td data-i18n="s15_r4_why">Re-run reviews after new pushes</td></tr>
+              <tr><td data-i18n="s15_r5_rule">Require approvals</td><td data-i18n="s15_r5_set">1+</td><td data-i18n="s15_r5_why">Human must approve alongside Claude</td></tr>
+              <tr><td data-i18n="s15_r6_rule">Enforce for admins</td><td data-i18n="s15_r6_set">Enabled</td><td data-i18n="s15_r6_why">No bypass, even for repository admins</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 data-i18n="s15_claudemd">CLAUDE.md Git Instructions</h3>
+        <pre><code>## Git Workflow
+- NEVER push directly to main or master
+- ALWAYS create a feature branch: feature/&lt;description&gt;
+- Commit messages: conventional commits (feat:, fix:, chore:)
+- Run all tests before committing
+- One logical change per commit
+- Push and create PR when task is complete</code></pre>
+
+        <h3 data-i18n="s15_hook">Hook: Prevent Direct Main Pushes</h3>
+        <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); if echo \"$CMD\" | grep -qE 'git\\s+push.*\\b(main|master)\\b'; then echo 'BLOCKED: Direct push to main/master is not allowed. Use a feature branch.' &gt;&amp;2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+
+        <h3 data-i18n="s15_dodont">Best Practices</h3>
+        <div class="do-dont">
+          <div class="do-box">
+            <div class="label" data-i18n="label_do">DO</div>
+            <ul>
+              <li data-i18n="s15_do_1">Create feature branches for every task</li>
+              <li data-i18n="s15_do_2">Use conventional commit messages</li>
+              <li data-i18n="s15_do_3">Require CI checks before merge</li>
+              <li data-i18n="s15_do_4">Use git worktrees for parallel Claude agents</li>
+              <li data-i18n="s15_do_5">Keep branches short-lived (merge frequently)</li>
+            </ul>
+          </div>
+          <div class="dont-box">
+            <div class="label" data-i18n="label_dont">DON'T</div>
+            <ul>
+              <li data-i18n="s15_dont_1">Push directly to main/master</li>
+              <li data-i18n="s15_dont_2">Merge without passing status checks</li>
+              <li data-i18n="s15_dont_3">Let Claude force-push to shared branches</li>
+              <li data-i18n="s15_dont_4">Skip code review on Claude-generated code</li>
+              <li data-i18n="s15_dont_5">Leave long-lived branches unmerged</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong data-i18n="s15_callout_label">Key Principle:</strong>
+          <span data-i18n="s15_callout_text">Treat Claude-generated code the same as human-generated code. It must pass the same reviews, tests, and protection rules. Branch protection is your safety net.</span>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1468,6 +2101,7 @@ New to the React frontend of this project.</code></pre>
         hero_desc: 'Everything you need to set up your <code>.claude/</code> folder, write effective instructions, create skills &amp; subagents, and structure your project for optimal results.',
         section_1: "Section 1", section_2: "Section 2", section_3: "Section 3", section_4: "Section 4", section_5: "Section 5",
         section_6: "Section 6", section_7: "Section 7", section_8: "Section 8", section_9: "Section 9", section_10: "Section 10",
+        section_11: "Section 11", section_12: "Section 12", section_13: "Section 13", section_14: "Section 14", section_15: "Section 15",
         s1_title: "Project Structure",
         s1_desc: 'A well-organized <code>.claude/</code> directory is the foundation of effective Claude Code usage. Here\'s the recommended layout:',
         s1_user_config: "User-Level Configuration",
@@ -1628,7 +2262,141 @@ New to the React frontend of this project.</code></pre>
         s10_r4: "MCP servers", s10_r5: "Custom commands", s10_r6: "Custom subagents",
         s10_r7: "Modular rules", s10_r8: "Hook scripts", s10_r9: "Subagent memory",
         s10_r9_share: "Optional",
-        s10_r10: "User settings", s10_r11: "Personal instructions", s10_r12: "Auto memory"
+        s10_r10: "User settings", s10_r11: "Personal instructions", s10_r12: "Auto memory",
+        // Section 11: CI/CD Workflows
+        nav_cicd: "CI/CD Workflows",
+        s11_title: "CI/CD Workflows",
+        s11_desc: 'Integrate Claude Code into your continuous integration and delivery pipelines. Use <code>claude -p</code> (print mode) to run Claude non-interactively in CI environments for automated code review, test generation, and more.',
+        s11_overview: "How CI/CD Works with Claude",
+        s11_overview_desc: 'The key to CI integration is <code>claude -p</code> — print mode runs Claude non-interactively, reads from stdin or arguments, and outputs to stdout. No human interaction needed.',
+        s11_callout_label: "Key:",
+        s11_callout_text: '<code>claude -p "your prompt"</code> runs non-interactively. Combine with <code>--model</code> to control which model is used. All output goes to stdout for piping and capture.',
+        s11_env: "Environment Variables",
+        th_variable: "Variable", th_required: "Required?",
+        s11_env_key_desc: "API key for authenticating with Claude",
+        s11_env_model_desc: "Override model (e.g., haiku for faster CI)",
+        s11_env_ci_desc: "Auto-set by most CI providers, signals non-interactive mode",
+        s11_env_auto: "Auto-set",
+        s11_github: "GitHub Actions Workflow",
+        s11_bitbucket: "Bitbucket Pipelines",
+        s11_patterns: "Common CI Patterns",
+        s11_pat_review: "PR Review", s11_pat_review_desc: "Auto-review every pull request for quality, security, and best practices",
+        s11_pat_test: "Test Generation", s11_pat_test_desc: "Generate missing unit tests for changed files on every PR",
+        s11_pat_docs: "Docs Update", s11_pat_docs_desc: "Automatically update documentation when code changes",
+        s11_pat_lint: "Smart Lint Fix", s11_pat_lint_desc: "Auto-fix lint issues and push corrections as a new commit",
+        s11_tips: "CI Best Practices",
+        label_do: "DO", label_dont: "DON'T",
+        s11_do_1: 'Use <code>claude -p</code> for all CI commands (non-interactive)',
+        s11_do_2: "Set timeout limits on CI steps (5-10 min)",
+        s11_do_3: 'Cache the <code>npm install</code> of <code>@anthropic-ai/claude-code</code>',
+        s11_do_4: 'Use <code>--model haiku</code> for faster, cheaper CI runs',
+        s11_dont_1: "Don't use interactive mode in CI (it will hang)",
+        s11_dont_2: "Don't hardcode API keys in workflow files",
+        s11_dont_3: 'Don\'t skip <code>fetch-depth: 0</code> (Claude needs git history)',
+        s11_dont_4: "Don't run on every commit — use PR triggers instead",
+        // Section 12: Unit Testing
+        nav_testing: "Unit Testing",
+        s12_title: "Unit Testing with Claude",
+        s12_desc: "Tests are the single most impactful thing you can add to a project for Claude. They create a verification loop that lets Claude generate code, run tests, see failures, fix issues, and repeat — turning blind coding into evidence-based iteration.",
+        s12_why: "Why Tests Improve Claude's Performance",
+        s12_why_callout_label: "Feedback Loop:",
+        s12_why_callout_text: "Without tests, Claude operates blind — it writes code and hopes it works. With tests, Claude self-corrects: generate code, run tests, see failures, fix, repeat. This loop dramatically improves output quality.",
+        s12_workflow: "Test-Driven Development Workflow",
+        s12_step1_title: "1. Write tests first",
+        s12_step1_desc: "Ask Claude to write failing tests for the feature you want to build. This defines the expected behavior before any code exists.",
+        s12_step2_title: "2. Implement the feature",
+        s12_step2_desc: "Claude writes the actual code to make the tests pass. The tests guide the implementation.",
+        s12_step3_title: "3. Run and verify",
+        s12_step3_desc: 'Claude runs <code>npm test</code>, sees results, and iterates until all tests pass. Each failure provides specific, actionable feedback.',
+        s12_step4_title: "4. Refactor with safety net",
+        s12_step4_desc: "Tests ensure refactoring doesn't break anything. Claude can confidently improve code knowing tests will catch regressions.",
+        s12_claudemd: "CLAUDE.md Testing Instructions",
+        s12_claudemd_desc: "Add these to your CLAUDE.md to enforce testing standards:",
+        s12_skill: "Test Generation Skill",
+        s12_agent: "Test Review Subagent",
+        s12_agent_title: "test-reviewer agent definition",
+        s12_examples: "Example Test Prompts",
+        s12_ex_gen: "Generate Tests", s12_ex_gen_desc: "Write comprehensive tests for src/utils/parser.ts covering all edge cases",
+        s12_ex_tdd: "TDD Approach", s12_ex_tdd_desc: "Write failing tests for a user authentication feature, then implement it",
+        s12_ex_fix: "Fix + Regression Test", s12_ex_fix_desc: "Fix the bug in issue #42 and add a regression test that would have caught it",
+        s12_ex_cover: "Improve Coverage", s12_ex_cover_desc: "Run coverage report and add tests for any file below 80%",
+        // Section 13: Self-Evaluation
+        nav_selfeval: "Self-Evaluation",
+        s13_title: "Self-Evaluation &amp; Recursive Optimization",
+        s13_desc: "Make Claude evaluate and improve its own output. By combining CLAUDE.md instructions, hooks, and subagents, you can create a system where Claude automatically validates, reviews, and refines its work.",
+        s13_loop: "The Recursive Improvement Loop",
+        s13_claudemd: "CLAUDE.md Self-Checking Instructions",
+        s13_hooks: "Hooks for Automatic Validation",
+        s13_hooks_desc: "Use PostToolUse hooks to auto-validate after every edit, and Stop hooks to run final checks:",
+        s13_subagent: "Self-Review Subagent",
+        s13_subagent_title: "self-reviewer agent definition",
+        s13_patterns: "Self-Evaluation Patterns",
+        s13_pat_verify: "Verify Before Done", s13_pat_verify_desc: 'Add "NEVER say done without running tests" to CLAUDE.md',
+        s13_pat_lint: "Auto-Lint on Edit", s13_pat_lint_desc: "PostToolUse hook runs linter after every file edit automatically",
+        s13_pat_review: "Self-Review Agent", s13_pat_review_desc: "Delegate to a separate subagent for objective, independent review",
+        s13_pat_iterate: "Iterative Refinement", s13_pat_iterate_desc: "Ask Claude to improve its solution 2-3 times before finalizing",
+        s13_callout_label: "Best Practice:",
+        s13_callout_text: "Combine hooks (deterministic validation) with CLAUDE.md instructions (behavioral guidance) for maximum reliability. Hooks catch what instructions might miss.",
+        // Section 14: Review Pipeline
+        nav_review: "Review Pipeline",
+        s14_title: "Multi-Layer Code Review Pipeline",
+        s14_desc: "Chain multiple specialized review agents for thorough, automated code review. Each layer focuses on a different aspect — quality, security, architecture, and performance — ensuring comprehensive coverage no single reviewer could achieve.",
+        s14_layers: "The Four Layers",
+        th_layer: "Layer", th_focus: "Focus", th_agent: "Agent", th_tools: "Tools",
+        s14_t_l1: "1. Quality", s14_t_l1_focus: "Lint, format, code standards",
+        s14_t_l2: "2. Security", s14_t_l2_focus: "OWASP, dependency audit",
+        s14_t_l3: "3. Architecture", s14_t_l3_focus: "Patterns, coupling, design",
+        s14_t_l4: "4. Performance", s14_t_l4_focus: "Complexity, resource usage",
+        s14_layer1: "Layer 1: Quality Check", s14_layer1_title: "quality-checker agent definition",
+        s14_layer2: "Layer 2: Security Review", s14_layer2_title: "security-auditor agent definition",
+        s14_layer3: "Layer 3: Architecture Review", s14_layer3_title: "arch-reviewer agent definition",
+        s14_layer4: "Layer 4: Performance Review", s14_layer4_title: "perf-analyzer agent definition",
+        s14_pipeline: "Chaining the Pipeline",
+        s14_pipeline_desc: "Create a skill that runs all four layers and compiles a final report:",
+        s14_ci: "CI Integration",
+        s14_ci_desc: "Run the full pipeline on every PR in your CI workflow:",
+        s14_callout_label: "Tip:",
+        s14_callout_text: 'Use <code>haiku</code> for Layer 1 (fast, cheap linting) and <code>sonnet</code> for Layers 2-4 (requires deeper reasoning). This balances cost and quality across the pipeline.',
+        // Section 15: Branch Protection
+        nav_git: "Branch Protection",
+        s15_title: "Branch Protection &amp; Git Strategy",
+        s15_desc: "Establish safe git workflows when using Claude Code. Branch protection ensures that no code — human or AI-generated — reaches your main branch without passing all reviews and checks.",
+        s15_strategy: "Branch Isolation Strategy",
+        s15_strat_feature: "Feature Branches", s15_strat_feature_desc: "One branch per task. Claude works in isolation, never touching main directly.",
+        s15_strat_review: "Review Branches", s15_strat_review_desc: "Separate branch for Claude's review changes and auto-fixes.",
+        s15_strat_worktree: "Git Worktrees", s15_strat_worktree_desc: 'Use <code>isolation: worktree</code> for parallel agent work on separate copies.',
+        s15_workflow: "Complete Workflow",
+        s15_wf1_title: "1. Create feature branch",
+        s15_wf2_title: "2. Work with Claude", s15_wf2_desc: "Claude makes changes and commits to the feature branch",
+        s15_wf3_title: "3. Push and open PR",
+        s15_wf4_title: "4. Automated Claude review", s15_wf4_desc: 'CI triggers <code>claude -p</code> to review the PR automatically',
+        s15_wf5_title: "5. Address feedback", s15_wf5_desc: "Fix issues from review, push again — CI re-runs automatically",
+        s15_wf6_title: "6. Merge after checks pass", s15_wf6_desc: "All status checks green — merge to main with confidence",
+        s15_protection: "GitHub Branch Protection Rules",
+        s15_protection_desc: "Configure via GitHub Settings &rarr; Branches &rarr; Add rule, or via CLI:",
+        s15_rules: "Recommended Protection Rules",
+        th_rule: "Rule", th_setting: "Setting", th_why: "Why",
+        s15_r1_rule: "Require PR before merge", s15_r1_set: "Enabled", s15_r1_why: "Prevents direct pushes to main",
+        s15_r2_rule: "Required status checks", s15_r2_why: "Ensures Claude review + tests pass",
+        s15_r3_rule: "Strict status checks", s15_r3_set: "Enabled", s15_r3_why: "Branch must be up-to-date before merge",
+        s15_r4_rule: "Dismiss stale reviews", s15_r4_set: "Enabled", s15_r4_why: "Re-run reviews after new pushes",
+        s15_r5_rule: "Require approvals", s15_r5_set: "1+", s15_r5_why: "Human must approve alongside Claude",
+        s15_r6_rule: "Enforce for admins", s15_r6_set: "Enabled", s15_r6_why: "No bypass, even for repository admins",
+        s15_claudemd: "CLAUDE.md Git Instructions",
+        s15_hook: "Hook: Prevent Direct Main Pushes",
+        s15_dodont: "Best Practices",
+        s15_do_1: "Create feature branches for every task",
+        s15_do_2: "Use conventional commit messages",
+        s15_do_3: "Require CI checks before merge",
+        s15_do_4: "Use git worktrees for parallel Claude agents",
+        s15_do_5: "Keep branches short-lived (merge frequently)",
+        s15_dont_1: "Push directly to main/master",
+        s15_dont_2: "Merge without passing status checks",
+        s15_dont_3: "Let Claude force-push to shared branches",
+        s15_dont_4: "Skip code review on Claude-generated code",
+        s15_dont_5: "Leave long-lived branches unmerged",
+        s15_callout_label: "Key Principle:",
+        s15_callout_text: "Treat Claude-generated code the same as human-generated code. It must pass the same reviews, tests, and protection rules. Branch protection is your safety net."
       },
       sr: {
         subtitle: "Vodič za najbolje prakse",
@@ -1647,6 +2415,7 @@ New to the React frontend of this project.</code></pre>
         hero_desc: 'Sve što vam je potrebno da podesite <code>.claude/</code> folder, napišete efektivna uputstva, kreirate veštine i podagente, i strukturirate projekat za optimalne rezultate.',
         section_1: "Sekcija 1", section_2: "Sekcija 2", section_3: "Sekcija 3", section_4: "Sekcija 4", section_5: "Sekcija 5",
         section_6: "Sekcija 6", section_7: "Sekcija 7", section_8: "Sekcija 8", section_9: "Sekcija 9", section_10: "Sekcija 10",
+        section_11: "Sekcija 11", section_12: "Sekcija 12", section_13: "Sekcija 13", section_14: "Sekcija 14", section_15: "Sekcija 15",
         s1_title: "Struktura projekta",
         s1_desc: 'Dobro organizovan <code>.claude/</code> direktorijum je osnova efektivnog korišćenja Claude Code-a. Evo preporučenog rasporeda:',
         s1_user_config: "Konfiguracija na nivou korisnika",
@@ -1807,7 +2576,141 @@ New to the React frontend of this project.</code></pre>
         s10_r4: "MCP serveri", s10_r5: "Prilagođene komande", s10_r6: "Prilagođeni podagenti",
         s10_r7: "Modularna pravila", s10_r8: "Skripte kukica", s10_r9: "Memorija podagenta",
         s10_r9_share: "Opciono",
-        s10_r10: "Korisnička podešavanja", s10_r11: "Lična uputstva", s10_r12: "Automatska memorija"
+        s10_r10: "Korisnička podešavanja", s10_r11: "Lična uputstva", s10_r12: "Automatska memorija",
+        // Sekcija 11: CI/CD radni tokovi
+        nav_cicd: "CI/CD radni tokovi",
+        s11_title: "CI/CD radni tokovi",
+        s11_desc: 'Integrišite Claude Code u vaše CI/CD pipeline-e. Koristite <code>claude -p</code> (print režim) za pokretanje Claude-a neinteraktivno u CI okruženjima za automatizovan pregled koda, generisanje testova i još mnogo toga.',
+        s11_overview: "Kako CI/CD funkcioniše sa Claude-om",
+        s11_overview_desc: 'Ključ za CI integraciju je <code>claude -p</code> — print režim pokreće Claude neinteraktivno, čita iz stdin ili argumenata, i ispisuje na stdout. Nije potrebna ljudska interakcija.',
+        s11_callout_label: "Ključno:",
+        s11_callout_text: '<code>claude -p "vaš prompt"</code> se pokreće neinteraktivno. Kombinujte sa <code>--model</code> za kontrolu modela. Sav izlaz ide na stdout za prosleđivanje i snimanje.',
+        s11_env: "Varijable okruženja",
+        th_variable: "Varijabla", th_required: "Obavezno?",
+        s11_env_key_desc: "API ključ za autentifikaciju sa Claude-om",
+        s11_env_model_desc: "Zamena modela (npr. haiku za brži CI)",
+        s11_env_ci_desc: "Automatski postavljeno od strane većine CI provajdera, signalizira neinteraktivni režim",
+        s11_env_auto: "Automatski",
+        s11_github: "GitHub Actions radni tok",
+        s11_bitbucket: "Bitbucket Pipelines",
+        s11_patterns: "Uobičajeni CI obrasci",
+        s11_pat_review: "Pregled PR-a", s11_pat_review_desc: "Automatski pregledajte svaki pull request za kvalitet, bezbednost i najbolje prakse",
+        s11_pat_test: "Generisanje testova", s11_pat_test_desc: "Generišite nedostajuće unit testove za izmenjene fajlove na svakom PR-u",
+        s11_pat_docs: "Ažuriranje dokumentacije", s11_pat_docs_desc: "Automatski ažurirajte dokumentaciju kada se kod promeni",
+        s11_pat_lint: "Pametno popravljanje lint-a", s11_pat_lint_desc: "Automatski popravite lint probleme i gurnite ispravke kao novi komit",
+        s11_tips: "Najbolje prakse za CI",
+        label_do: "RADITE", label_dont: "NE RADITE",
+        s11_do_1: 'Koristite <code>claude -p</code> za sve CI komande (neinteraktivno)',
+        s11_do_2: "Postavite vremenska ograničenja na CI korake (5-10 min)",
+        s11_do_3: 'Kešujte <code>npm install</code> za <code>@anthropic-ai/claude-code</code>',
+        s11_do_4: 'Koristite <code>--model haiku</code> za brže i jeftinije CI pokretanje',
+        s11_dont_1: "Ne koristite interaktivni režim u CI-ju (zaglavljaće se)",
+        s11_dont_2: "Ne upisujte API ključeve direktno u fajlove radnog toka",
+        s11_dont_3: 'Ne preskačite <code>fetch-depth: 0</code> (Claude-u treba git istorija)',
+        s11_dont_4: "Ne pokretajte na svakom komitu — koristite PR okidače",
+        // Sekcija 12: Testiranje
+        nav_testing: "Unit testovi",
+        s12_title: "Unit testiranje sa Claude-om",
+        s12_desc: "Testovi su najuticajnija stvar koju možete dodati projektu za Claude-a. Oni kreiraju petlju verifikacije koja omogućava Claude-u da generiše kod, pokrene testove, vidi greške, popravi ih i ponovi — pretvarajući slepo kodiranje u iteraciju zasnovanu na dokazima.",
+        s12_why: "Zašto testovi poboljšavaju performanse Claude-a",
+        s12_why_callout_label: "Petlja povratnih informacija:",
+        s12_why_callout_text: "Bez testova, Claude radi naslepo — piše kod i nada se da funkcioniše. Sa testovima, Claude se samokoriguje: generiše kod, pokrene testove, vidi greške, popravlja, ponavlja. Ova petlja dramatično poboljšava kvalitet izlaza.",
+        s12_workflow: "Radni tok razvoja vođen testovima",
+        s12_step1_title: "1. Prvo napišite testove",
+        s12_step1_desc: "Tražite od Claude-a da napiše testove koji padaju za funkcionalnost koju želite. Ovo definiše očekivano ponašanje pre nego što kod postoji.",
+        s12_step2_title: "2. Implementirajte funkcionalnost",
+        s12_step2_desc: "Claude piše stvarni kod da testovi prođu. Testovi vode implementaciju.",
+        s12_step3_title: "3. Pokrenite i verifikujte",
+        s12_step3_desc: 'Claude pokreće <code>npm test</code>, vidi rezultate i iterira dok svi testovi ne prođu. Svaki pad pruža specifičnu, delotvornu povratnu informaciju.',
+        s12_step4_title: "4. Refaktorišite sa sigurnosnom mrežom",
+        s12_step4_desc: "Testovi osiguravaju da refaktorisanje ne kvari ništa. Claude može samouvereno poboljšati kod znajući da će testovi uhvatiti regresije.",
+        s12_claudemd: "CLAUDE.md uputstva za testiranje",
+        s12_claudemd_desc: "Dodajte ova pravila u CLAUDE.md za primenu standarda testiranja:",
+        s12_skill: "Veština za generisanje testova",
+        s12_agent: "Podagent za pregled testova",
+        s12_agent_title: "definicija test-reviewer agenta",
+        s12_examples: "Primeri prompt-ova za testove",
+        s12_ex_gen: "Generisanje testova", s12_ex_gen_desc: "Napišite sveobuhvatne testove za src/utils/parser.ts pokrivajući sve granične slučajeve",
+        s12_ex_tdd: "TDD pristup", s12_ex_tdd_desc: "Napišite testove koji padaju za funkcionalnost autentifikacije korisnika, zatim je implementirajte",
+        s12_ex_fix: "Popravka + Regresioni test", s12_ex_fix_desc: "Popravite bag u issue #42 i dodajte regresioni test koji bi ga uhvatio",
+        s12_ex_cover: "Poboljšanje pokrivenosti", s12_ex_cover_desc: "Pokrenite izveštaj o pokrivenosti i dodajte testove za svaki fajl ispod 80%",
+        // Sekcija 13: Samoevaluacija
+        nav_selfeval: "Samoevaluacija",
+        s13_title: "Samoevaluacija i rekurzivna optimizacija",
+        s13_desc: "Naterajte Claude-a da evaluira i poboljša sopstveni izlaz. Kombinovanjem CLAUDE.md uputstava, kukica i podagenata, možete kreirati sistem gde Claude automatski validira, pregleda i usavršava svoj rad.",
+        s13_loop: "Petlja rekurzivnog poboljšanja",
+        s13_claudemd: "CLAUDE.md uputstva za samoproveru",
+        s13_hooks: "Kukice za automatsku validaciju",
+        s13_hooks_desc: "Koristite PostToolUse kukice za automatsku validaciju nakon svake izmene, i Stop kukice za finalne provere:",
+        s13_subagent: "Podagent za samoproveru",
+        s13_subagent_title: "definicija self-reviewer agenta",
+        s13_patterns: "Obrasci samoevaluacije",
+        s13_pat_verify: "Verifikuj pre završetka", s13_pat_verify_desc: 'Dodajte "NIKADA ne recite da ste završili bez pokretanja testova" u CLAUDE.md',
+        s13_pat_lint: "Auto-lint pri izmeni", s13_pat_lint_desc: "PostToolUse kukica pokreće linter nakon svake izmene fajla automatski",
+        s13_pat_review: "Agent za samoproveru", s13_pat_review_desc: "Delegirajte zasebnom podagentu za objektivan, nezavisan pregled",
+        s13_pat_iterate: "Iterativno usavršavanje", s13_pat_iterate_desc: "Tražite od Claude-a da poboljša rešenje 2-3 puta pre finalizacije",
+        s13_callout_label: "Najbolja praksa:",
+        s13_callout_text: "Kombinujte kukice (deterministička validacija) sa CLAUDE.md uputstvima (smernice ponašanja) za maksimalnu pouzdanost. Kukice hvataju ono što uputstva mogu propustiti.",
+        // Sekcija 14: Pipeline za pregled
+        nav_review: "Pipeline za pregled",
+        s14_title: "Višeslojni pipeline za pregled koda",
+        s14_desc: "Ulančajte više specijalizovanih agenata za pregled radi temeljnog, automatizovanog pregleda koda. Svaki sloj se fokusira na drugačiji aspekt — kvalitet, bezbednost, arhitekturu i performanse — osiguravajući sveobuhvatnu pokrivenost.",
+        s14_layers: "Četiri sloja",
+        th_layer: "Sloj", th_focus: "Fokus", th_agent: "Agent", th_tools: "Alati",
+        s14_t_l1: "1. Kvalitet", s14_t_l1_focus: "Lint, format, standardi koda",
+        s14_t_l2: "2. Bezbednost", s14_t_l2_focus: "OWASP, revizija zavisnosti",
+        s14_t_l3: "3. Arhitektura", s14_t_l3_focus: "Obrasci, povezanost, dizajn",
+        s14_t_l4: "4. Performanse", s14_t_l4_focus: "Složenost, korišćenje resursa",
+        s14_layer1: "Sloj 1: Provera kvaliteta", s14_layer1_title: "definicija quality-checker agenta",
+        s14_layer2: "Sloj 2: Bezbednosni pregled", s14_layer2_title: "definicija security-auditor agenta",
+        s14_layer3: "Sloj 3: Pregled arhitekture", s14_layer3_title: "definicija arch-reviewer agenta",
+        s14_layer4: "Sloj 4: Pregled performansi", s14_layer4_title: "definicija perf-analyzer agenta",
+        s14_pipeline: "Ulančavanje pipeline-a",
+        s14_pipeline_desc: "Kreirajte veštinu koja pokreće sva četiri sloja i kompilira finalni izveštaj:",
+        s14_ci: "CI integracija",
+        s14_ci_desc: "Pokrenite ceo pipeline na svakom PR-u u vašem CI radnom toku:",
+        s14_callout_label: "Savet:",
+        s14_callout_text: 'Koristite <code>haiku</code> za Sloj 1 (brzo, jeftino lintovanje) i <code>sonnet</code> za Slojeve 2-4 (zahteva dublje rezonovanje). Ovo balansira cenu i kvalitet kroz pipeline.',
+        // Sekcija 15: Zaštita grana
+        nav_git: "Zaštita grana",
+        s15_title: "Zaštita grana i Git strategija",
+        s15_desc: "Uspostavite bezbedne git radne tokove pri korišćenju Claude Code-a. Zaštita grana osigurava da nijedan kod — ljudski ili generisan od strane AI-ja — ne stigne na vašu glavnu granu bez prolaska svih pregleda i provera.",
+        s15_strategy: "Strategija izolacije grana",
+        s15_strat_feature: "Feature grane", s15_strat_feature_desc: "Jedna grana po zadatku. Claude radi u izolaciji, nikada ne dira main direktno.",
+        s15_strat_review: "Review grane", s15_strat_review_desc: "Zasebna grana za Claude-ove izmene pregleda i automatske popravke.",
+        s15_strat_worktree: "Git Worktree-ovi", s15_strat_worktree_desc: 'Koristite <code>isolation: worktree</code> za paralelni rad agenata na zasebnim kopijama.',
+        s15_workflow: "Kompletni radni tok",
+        s15_wf1_title: "1. Kreiranje feature grane",
+        s15_wf2_title: "2. Rad sa Claude-om", s15_wf2_desc: "Claude pravi izmene i komituje na feature granu",
+        s15_wf3_title: "3. Guranje i otvaranje PR-a",
+        s15_wf4_title: "4. Automatizovani Claude pregled", s15_wf4_desc: 'CI pokreće <code>claude -p</code> za automatski pregled PR-a',
+        s15_wf5_title: "5. Adresiranje povratnih informacija", s15_wf5_desc: "Popravite probleme iz pregleda, gurnite ponovo — CI se automatski ponovo pokreće",
+        s15_wf6_title: "6. Spajanje nakon prolaska provera", s15_wf6_desc: "Sve statusne provere zelene — spajanje na main sa poverenjem",
+        s15_protection: "GitHub pravila zaštite grana",
+        s15_protection_desc: "Konfigurišite preko GitHub Podešavanja &rarr; Grane &rarr; Dodaj pravilo, ili preko CLI-ja:",
+        s15_rules: "Preporučena pravila zaštite",
+        th_rule: "Pravilo", th_setting: "Podešavanje", th_why: "Zašto",
+        s15_r1_rule: "Zahtevaj PR pre spajanja", s15_r1_set: "Uključeno", s15_r1_why: "Sprečava direktno guranje na main",
+        s15_r2_rule: "Obavezne statusne provere", s15_r2_why: "Osigurava da Claude pregled + testovi prođu",
+        s15_r3_rule: "Stroge statusne provere", s15_r3_set: "Uključeno", s15_r3_why: "Grana mora biti ažurna pre spajanja",
+        s15_r4_rule: "Odbacivanje zastarelih pregleda", s15_r4_set: "Uključeno", s15_r4_why: "Ponovo pokrenite preglede nakon novih guranja",
+        s15_r5_rule: "Zahtevanje odobrenja", s15_r5_set: "1+", s15_r5_why: "Čovek mora odobriti pored Claude-a",
+        s15_r6_rule: "Primena na admine", s15_r6_set: "Uključeno", s15_r6_why: "Bez zaobilaženja, čak i za admine repozitorijuma",
+        s15_claudemd: "CLAUDE.md Git uputstva",
+        s15_hook: "Kukica: Sprečavanje direktnog guranja na main",
+        s15_dodont: "Najbolje prakse",
+        s15_do_1: "Kreirajte feature grane za svaki zadatak",
+        s15_do_2: "Koristite konvencionalne poruke komitova",
+        s15_do_3: "Zahtevajte CI provere pre spajanja",
+        s15_do_4: "Koristite git worktree-ove za paralelne Claude agente",
+        s15_do_5: "Držite grane kratkotrajnim (spajajte često)",
+        s15_dont_1: "Gurajte direktno na main/master",
+        s15_dont_2: "Spajajte bez prolaska statusnih provera",
+        s15_dont_3: "Dozvolite Claude-u force-push na deljene grane",
+        s15_dont_4: "Preskačite pregled koda na kodu generisanom od Claude-a",
+        s15_dont_5: "Ostavljajte dugotrajne grane nespojene",
+        s15_callout_label: "Ključni princip:",
+        s15_callout_text: "Tretirajte kod generisan od Claude-a isto kao kod koji pišu ljudi. Mora proći iste preglede, testove i pravila zaštite. Zaštita grana je vaša sigurnosna mreža."
       }
     };
 
