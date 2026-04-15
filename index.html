@@ -1477,8 +1477,33 @@ New to the React frontend of this project.</code></pre>
           </table>
         </div>
 
+        <h3 data-i18n="s11_cli">Claude CLI in CI</h3>
+        <p data-i18n="s11_cli_desc">Common <code>claude -p</code> invocations for CI pipelines:</p>
+        <details>
+          <summary data-i18n="s11_cli_examples">Command-line examples</summary>
+          <pre><code># Basic review
+claude -p "Review the code changes in this PR"
+
+# With model selection (faster + cheaper for CI)
+claude -p --model haiku "Check for lint issues in changed files"
+
+# Pipe diff as context
+git diff origin/main...HEAD | claude -p "Review this diff for bugs and security issues"
+
+# Output to file for CI artifacts
+claude -p "Run full code review" &gt; review-report.md
+
+# With max turns limit for cost control
+claude -p --max-turns 3 "Quick review of this PR"
+
+# Using allowed-tools to restrict what Claude can do in CI
+claude -p --allowedTools "Read,Grep,Glob" "Analyze code quality"</code></pre>
+        </details>
+
         <h3 data-i18n="s11_github">GitHub Actions Workflow</h3>
-        <pre><code>name: Claude Code Review
+        <details>
+          <summary data-i18n="s11_github_summary">PR Review workflow (.github/workflows/claude-review.yml)</summary>
+          <pre><code>name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
@@ -1519,9 +1544,112 @@ jobs:
               issue_number: context.issue.number,
               body: `## Claude Code Review\n\n${review}`
             });</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s11_github_test_summary">Test Generation workflow (.github/workflows/claude-tests.yml)</summary>
+          <pre><code>name: Claude Test Generation
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Generate Missing Tests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          CHANGED=$(git diff --name-only origin/main -- '*.ts' '*.js' \
+            | grep -v '\.test\.' | grep -v '__tests__')
+          if [ -n "$CHANGED" ]; then
+            claude -p "For these changed files:
+            $CHANGED
+            Check which ones lack tests. Generate unit
+            tests for files below 80% coverage.
+            Run npm test to verify they pass."
+          fi
+
+      - name: Commit Generated Tests
+        run: |
+          git config user.name "claude-bot"
+          git config user.email "claude-bot@noreply.github.com"
+          git add '*.test.*' '__tests__/**'
+          git diff --staged --quiet || \
+            git commit -m "test: add generated tests for changed files"
+          git push</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s11_github_lint_summary">Auto-Fix Lint workflow (.github/workflows/claude-lint.yml)</summary>
+          <pre><code>name: Claude Lint Fix
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  lint-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Fix Lint Issues
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p --model haiku "Run npx eslint . --fix
+          and npx prettier --write . on the codebase.
+          Fix any remaining issues that auto-fix missed."
+
+      - name: Commit Fixes
+        run: |
+          git config user.name "claude-bot"
+          git config user.email "claude-bot@noreply.github.com"
+          git add -A
+          git diff --staged --quiet || \
+            git commit -m "style: auto-fix lint and formatting issues"
+          git push</code></pre>
+        </details>
 
         <h3 data-i18n="s11_bitbucket">Bitbucket Pipelines</h3>
-        <pre><code>image: node:20
+        <details>
+          <summary data-i18n="s11_bitbucket_summary">PR Review pipeline (bitbucket-pipelines.yml)</summary>
+          <pre><code>image: node:20
 
 pipelines:
   pull-requests:
@@ -1537,6 +1665,59 @@ pipelines:
               Run git diff origin/main...HEAD.
               Report issues with severity." &gt; review.md
             - cat review.md</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s11_bitbucket_security_summary">Security Scan pipeline (bitbucket-pipelines.yml)</summary>
+          <pre><code>image: node:20
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Claude Security Scan
+          caches:
+            - node
+          script:
+            - npm install -g @anthropic-ai/claude-code
+            - npm ci
+            - npm audit --json &gt; audit.json || true
+            - |
+              claude -p "Perform a security review:
+              1. Read audit.json for dependency vulnerabilities
+              2. Run git diff origin/main...HEAD
+              3. Check for OWASP Top 10 issues in changed code
+              4. Check for hardcoded secrets or API keys
+              5. Rate findings: Critical/High/Medium/Low
+              Output a structured security report." &gt; security-report.md
+            - cat security-report.md
+          artifacts:
+            - security-report.md</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s11_gitlab_summary">GitLab CI example (.gitlab-ci.yml)</summary>
+          <pre><code>claude-review:
+  image: node:20
+  stage: review
+  only:
+    - merge_requests
+  cache:
+    key: claude-code
+    paths:
+      - /usr/local/lib/node_modules/@anthropic-ai
+  script:
+    - npm install -g @anthropic-ai/claude-code
+    - |
+      claude -p "Review this merge request.
+      Run git diff $CI_MERGE_REQUEST_DIFF_BASE_SHA...HEAD.
+      Provide feedback on quality and security." &gt; review.md
+    - cat review.md
+  artifacts:
+    paths:
+      - review.md
+    expire_in: 1 week</code></pre>
+        </details>
 
         <h3 data-i18n="s11_patterns">Common CI Patterns</h3>
         <div class="grid-2">
@@ -1615,17 +1796,218 @@ pipelines:
 
         <h3 data-i18n="s12_claudemd">CLAUDE.md Testing Instructions</h3>
         <p data-i18n="s12_claudemd_desc">Add these to your CLAUDE.md to enforce testing standards:</p>
-        <pre><code>## Testing Standards
+        <details>
+          <summary data-i18n="s12_claudemd_toggle">CLAUDE.md testing rules example</summary>
+          <pre><code>## Testing Standards
 - ALWAYS run `npm test` after making changes
 - Write tests BEFORE implementing features (TDD)
 - Minimum 80% code coverage for new code
 - Test command: `npm test -- --coverage`
 - Single test: `npm test -- --testPathPattern="filename"`
 - Never mock what you don't own
-- Every bug fix must include a regression test</code></pre>
+- Every bug fix must include a regression test
+
+## Test Structure
+- Place tests in `__tests__/` mirroring src/ structure
+- Name test files: `[filename].test.ts`
+- Group related tests with `describe()` blocks
+- Use clear test names: "should [expected behavior] when [condition]"
+- Arrange-Act-Assert pattern for each test</code></pre>
+        </details>
+
+        <h3 data-i18n="s12_real_examples">Real Code Examples</h3>
+        <details>
+          <summary data-i18n="s12_real_jest">Jest test example (TypeScript)</summary>
+          <pre><code>// src/utils/formatPrice.ts
+export function formatPrice(cents: number, currency = 'USD'): string {
+  if (!Number.isFinite(cents)) throw new Error('Invalid amount');
+  const dollars = (cents / 100).toFixed(2);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency
+  }).format(Number(dollars));
+}
+
+// __tests__/utils/formatPrice.test.ts
+import { formatPrice } from '../../src/utils/formatPrice';
+
+describe('formatPrice', () =&gt; {
+  // Happy path
+  it('should format cents to USD by default', () =&gt; {
+    expect(formatPrice(1999)).toBe('$19.99');
+  });
+
+  it('should format zero cents', () =&gt; {
+    expect(formatPrice(0)).toBe('$0.00');
+  });
+
+  it('should support different currencies', () =&gt; {
+    expect(formatPrice(1500, 'EUR')).toContain('15.00');
+  });
+
+  // Edge cases
+  it('should handle large amounts', () =&gt; {
+    expect(formatPrice(99999999)).toBe('$999,999.99');
+  });
+
+  it('should handle negative amounts (refunds)', () =&gt; {
+    expect(formatPrice(-500)).toBe('-$5.00');
+  });
+
+  // Error handling
+  it('should throw on NaN', () =&gt; {
+    expect(() =&gt; formatPrice(NaN)).toThrow('Invalid amount');
+  });
+
+  it('should throw on Infinity', () =&gt; {
+    expect(() =&gt; formatPrice(Infinity)).toThrow('Invalid amount');
+  });
+});</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s12_real_pytest">pytest example (Python)</summary>
+          <pre><code># src/services/user_service.py
+class UserService:
+    def __init__(self, db):
+        self.db = db
+
+    def create_user(self, email: str, name: str) -&gt; dict:
+        if not email or '@' not in email:
+            raise ValueError('Invalid email')
+        if self.db.find_user(email):
+            raise ValueError('Email already exists')
+        return self.db.insert_user({
+            'email': email.lower().strip(),
+            'name': name.strip()
+        })
+
+# tests/test_user_service.py
+import pytest
+from unittest.mock import Mock
+from src.services.user_service import UserService
+
+@pytest.fixture
+def mock_db():
+    db = Mock()
+    db.find_user.return_value = None
+    db.insert_user.side_effect = lambda u: {**u, 'id': 1}
+    return db
+
+@pytest.fixture
+def service(mock_db):
+    return UserService(mock_db)
+
+class TestCreateUser:
+    def test_creates_user_with_valid_data(self, service, mock_db):
+        result = service.create_user('john@example.com', 'John')
+        assert result['email'] == 'john@example.com'
+        assert result['name'] == 'John'
+        mock_db.insert_user.assert_called_once()
+
+    def test_normalizes_email_to_lowercase(self, service):
+        result = service.create_user('JOHN@Example.COM', 'John')
+        assert result['email'] == 'john@example.com'
+
+    def test_strips_whitespace(self, service):
+        result = service.create_user(' john@test.com ', ' John ')
+        assert result['email'] == 'john@test.com'
+        assert result['name'] == 'John'
+
+    def test_rejects_empty_email(self, service):
+        with pytest.raises(ValueError, match='Invalid email'):
+            service.create_user('', 'John')
+
+    def test_rejects_email_without_at(self, service):
+        with pytest.raises(ValueError, match='Invalid email'):
+            service.create_user('not-an-email', 'John')
+
+    def test_rejects_duplicate_email(self, service, mock_db):
+        mock_db.find_user.return_value = {'id': 1}
+        with pytest.raises(ValueError, match='already exists'):
+            service.create_user('john@example.com', 'John')</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s12_real_react">React component testing (Testing Library)</summary>
+          <pre><code>// src/components/LoginForm.tsx
+export function LoginForm({ onSubmit }: { onSubmit: (data: LoginData) =&gt; void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: FormEvent) =&gt; {
+    e.preventDefault();
+    if (!email) return setError('Email is required');
+    if (password.length &lt; 8) return setError('Password must be 8+ chars');
+    setError('');
+    onSubmit({ email, password });
+  };
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      {error &amp;&amp; &lt;div role="alert"&gt;{error}&lt;/div&gt;}
+      &lt;input type="email" value={email}
+        onChange={e =&gt; setEmail(e.target.value)}
+        placeholder="Email" /&gt;
+      &lt;input type="password" value={password}
+        onChange={e =&gt; setPassword(e.target.value)}
+        placeholder="Password" /&gt;
+      &lt;button type="submit"&gt;Log In&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}
+
+// __tests__/components/LoginForm.test.tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from '../../src/components/LoginForm';
+
+describe('LoginForm', () =&gt; {
+  const mockSubmit = jest.fn();
+
+  beforeEach(() =&gt; {
+    mockSubmit.mockClear();
+  });
+
+  it('renders email, password fields and submit button', () =&gt; {
+    render(&lt;LoginForm onSubmit={mockSubmit} /&gt;);
+    expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
+  });
+
+  it('shows error when email is empty', async () =&gt; {
+    render(&lt;LoginForm onSubmit={mockSubmit} /&gt;);
+    await userEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('alert')).toHaveTextContent('Email is required');
+    expect(mockSubmit).not.toHaveBeenCalled();
+  });
+
+  it('shows error when password is too short', async () =&gt; {
+    render(&lt;LoginForm onSubmit={mockSubmit} /&gt;);
+    await userEvent.type(screen.getByPlaceholderText('Email'), 'a@b.com');
+    await userEvent.type(screen.getByPlaceholderText('Password'), 'short');
+    await userEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('alert')).toHaveTextContent('8+ chars');
+    expect(mockSubmit).not.toHaveBeenCalled();
+  });
+
+  it('calls onSubmit with email and password on valid input', async () =&gt; {
+    render(&lt;LoginForm onSubmit={mockSubmit} /&gt;);
+    await userEvent.type(screen.getByPlaceholderText('Email'), 'a@b.com');
+    await userEvent.type(screen.getByPlaceholderText('Password'), 'securepass');
+    await userEvent.click(screen.getByRole('button'));
+    expect(mockSubmit).toHaveBeenCalledWith({
+      email: 'a@b.com', password: 'securepass'
+    });
+  });
+});</code></pre>
+        </details>
 
         <h3 data-i18n="s12_skill">Test Generation Skill</h3>
-        <pre><code>---
+        <details>
+          <summary data-i18n="s12_skill_toggle">generate-tests SKILL.md</summary>
+          <pre><code>---
 name: generate-tests
 description: Generate comprehensive unit tests for a file
 argument-hint: &lt;file-path&gt;
@@ -1644,6 +2026,29 @@ allowed-tools: Read, Grep, Glob, Bash, Edit
    - Integration between functions
 5. Run `npm test` to verify all tests pass
 6. Report coverage for the file</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s12_skill_coverage_toggle">coverage-check SKILL.md</summary>
+          <pre><code>---
+name: coverage-check
+description: Check test coverage and fill gaps
+allowed-tools: Read, Grep, Glob, Bash, Edit
+---
+
+# Coverage Check &amp; Gap Fill
+
+1. Run `npm test -- --coverage --json &gt; coverage.json`
+2. Parse coverage report — find files below 80%
+3. For each under-covered file:
+   a. Read the source file
+   b. Read the existing test file (if any)
+   c. Identify untested functions and branches
+   d. Generate tests for uncovered paths
+4. Run `npm test` to verify new tests pass
+5. Run coverage again to confirm improvement
+6. Report: before/after coverage per file</code></pre>
+        </details>
 
         <h3 data-i18n="s12_agent">Test Review Subagent</h3>
         <details>
@@ -1663,6 +2068,29 @@ You are a test quality reviewer. When invoked:
    - Are error paths covered?
    - Are assertions meaningful (not just "toBeDefined")?
 4. Suggest specific missing test cases</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s12_agent_regression_title">regression-guard agent definition</summary>
+          <pre><code>---
+name: regression-guard
+description: Ensure every bug fix has a regression test
+tools: Read, Grep, Glob, Bash
+model: sonnet
+maxTurns: 5
+---
+
+You are a regression test enforcer. When invoked:
+1. Run `git log --oneline origin/main..HEAD` to find new commits
+2. For each commit with "fix" in the message:
+   a. Find the changed source files
+   b. Check if a corresponding test was added or modified
+   c. If no test change found, flag it
+3. For flagged commits:
+   a. Analyze what was fixed
+   b. Write a regression test that would fail without the fix
+   c. Run tests to verify
+4. Report: which fixes have regression tests and which don't</code></pre>
         </details>
 
         <h3 data-i18n="s12_examples">Example Test Prompts</h3>
@@ -1707,7 +2135,9 @@ You are a test quality reviewer. When invoked:
         </div>
 
         <h3 data-i18n="s13_claudemd">CLAUDE.md Self-Checking Instructions</h3>
-        <pre><code>## Self-Evaluation Rules
+        <details>
+          <summary data-i18n="s13_claudemd_toggle">Self-evaluation rules for CLAUDE.md</summary>
+          <pre><code>## Self-Evaluation Rules
 - After EVERY code change, run the test suite
 - After EVERY file edit, run the linter on that file
 - If tests fail, fix them before reporting success
@@ -1717,10 +2147,45 @@ You are a test quality reviewer. When invoked:
   3. No type errors (run tsc --noEmit)
   4. The change actually solves the stated problem
 - NEVER say "done" without running verification</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s13_claudemd_advanced_toggle">Advanced CLAUDE.md with iterative refinement</summary>
+          <pre><code>## Iterative Self-Improvement
+After completing any task, run this self-review checklist:
+
+### Pass 1: Correctness
+- Run `npm test` — all must pass
+- Run `npx tsc --noEmit` — no type errors
+- Verify the original issue/request is actually solved
+
+### Pass 2: Quality
+- Run `npx eslint . --max-warnings 0`
+- Check: no unused imports, variables, or dead code
+- Check: no duplicated logic that should be extracted
+- Check: naming is clear and consistent
+
+### Pass 3: Edge Cases
+- What happens with empty input?
+- What happens with null/undefined?
+- What happens at boundary values?
+- What happens with concurrent access?
+- Add tests for any edge case not already covered
+
+### Pass 4: Security
+- No hardcoded secrets or credentials
+- All user input is validated and sanitized
+- No eval(), innerHTML, or dangerouslySetInnerHTML
+- SQL queries use parameterized statements
+
+If ANY check fails, fix it and re-run ALL passes.</code></pre>
+        </details>
 
         <h3 data-i18n="s13_hooks">Hooks for Automatic Validation</h3>
         <p data-i18n="s13_hooks_desc">Use PostToolUse hooks to auto-validate after every edit, and Stop hooks to run final checks:</p>
-        <pre><code>{
+        <details>
+          <summary data-i18n="s13_hooks_lint_toggle">Auto-lint after every file edit</summary>
+          <pre><code>{
   "hooks": {
     "PostToolUse": [
       {
@@ -1732,6 +2197,63 @@ You are a test quality reviewer. When invoked:
           }
         ]
       }
+    ]
+  }
+}</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s13_hooks_typecheck_toggle">TypeScript type-check after edits</summary>
+          <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo $TOOL_INPUT | jq -r '.file_path // empty'); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx ]]; then npx tsc --noEmit 2&gt;&amp;1 | head -20; fi"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s13_hooks_stop_toggle">Run tests on session stop</summary>
+          <pre><code>{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '--- Running final verification ---' &amp;&amp; npm test 2&gt;&amp;1 | tail -20 &amp;&amp; echo '--- Lint check ---' &amp;&amp; npx eslint . --max-warnings 0 2&gt;&amp;1 | tail -10"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s13_hooks_python_toggle">Python validation hooks (pytest + mypy)</summary>
+          <pre><code>{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo $TOOL_INPUT | jq -r '.file_path // empty'); if [[ \"$FILE\" == *.py ]]; then python -m ruff check \"$FILE\" 2&gt;&amp;1 || true; fi"
+          }
+        ]
+      }
     ],
     "Stop": [
       {
@@ -1739,13 +2261,14 @@ You are a test quality reviewer. When invoked:
         "hooks": [
           {
             "type": "command",
-            "command": "npm test 2&gt;&amp;1 | tail -20"
+            "command": "python -m pytest --tb=short -q 2&gt;&amp;1 | tail -20 &amp;&amp; python -m mypy . --ignore-missing-imports 2&gt;&amp;1 | tail -10"
           }
         ]
       }
     ]
   }
 }</code></pre>
+        </details>
 
         <h3 data-i18n="s13_subagent">Self-Review Subagent</h3>
         <details>
@@ -1768,6 +2291,66 @@ You are a critical self-reviewer. When invoked:
 3. Run the test suite and linter
 4. Fix any issues found
 5. Summarize what you improved</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s13_subagent_optimizer_title">recursive-optimizer agent definition</summary>
+          <pre><code>---
+name: recursive-optimizer
+description: Iteratively optimize code through multiple passes
+tools: Read, Grep, Glob, Bash, Edit
+model: sonnet
+maxTurns: 10
+---
+
+You are a recursive code optimizer. Run 3 improvement passes:
+
+## Pass 1: Fix Issues
+1. Run `npm test` — fix any failing tests
+2. Run `npx eslint .` — fix all lint errors
+3. Run `npx tsc --noEmit` — fix type errors
+
+## Pass 2: Improve Quality
+1. Find duplicated code: functions &gt; 10 lines that appear 2+ times
+2. Find overly complex functions: cyclomatic complexity &gt; 10
+3. Find missing error handling on async operations
+4. Refactor issues found, run tests after each change
+
+## Pass 3: Verify &amp; Report
+1. Run full test suite — all must pass
+2. Run lint — zero warnings
+3. Run type check — zero errors
+4. Compare before/after: lines changed, tests added
+5. Write summary of all improvements made</code></pre>
+        </details>
+
+        <h3 data-i18n="s13_skill">Self-Review Skill</h3>
+        <details>
+          <summary data-i18n="s13_skill_toggle">self-review SKILL.md</summary>
+          <pre><code>---
+name: self-review
+description: Run a self-review on the current session's changes
+allowed-tools: Read, Grep, Glob, Bash
+---
+
+# Self-Review Checklist
+
+Review all changes made in this session:
+
+1. Run `git diff` to see all changes
+2. For EACH changed file, verify:
+   - [ ] Change is correct and complete
+   - [ ] No unintended side effects
+   - [ ] Error handling is present
+   - [ ] Tests exist and pass
+3. Run `npm test -- --coverage`
+4. Run `npx eslint .`
+5. Run `npx tsc --noEmit`
+
+Report findings as:
+- PASS: All checks green
+- WARN: Minor issues found (list them)
+- FAIL: Critical issues (list with fixes needed)</code></pre>
         </details>
 
         <h3 data-i18n="s13_patterns">Self-Evaluation Patterns</h3>
@@ -1903,7 +2486,9 @@ Analyze performance of changed code:
 
         <h3 data-i18n="s14_pipeline">Chaining the Pipeline</h3>
         <p data-i18n="s14_pipeline_desc">Create a skill that runs all four layers and compiles a final report:</p>
-        <pre><code>---
+        <details>
+          <summary data-i18n="s14_pipeline_skill_toggle">full-review SKILL.md</summary>
+          <pre><code>---
 name: full-review
 description: Run the complete 4-layer code review pipeline
 allowed-tools: Read, Grep, Glob, Bash
@@ -1927,14 +2512,223 @@ For each layer, provide:
 
 End with an overall score:
   A (ship it) / B (minor fixes) / C (needs work) / D (major issues)</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s14_pipeline_output_toggle">Example pipeline output</summary>
+          <pre><code># Code Review Pipeline Report
+
+## Layer 1: Quality Check — PASS
+- ESLint: 0 errors, 0 warnings
+- Prettier: All files formatted
+- No issues found
+
+## Layer 2: Security Review — WARN
+- [Medium] src/api/users.ts:42 — User input passed to
+  SQL query without parameterization
+- [Low] package.json — lodash@4.17.20 has known
+  prototype pollution vulnerability
+- npm audit: 1 moderate vulnerability
+
+## Layer 3: Architecture Review — PASS
+- Changes follow existing repository patterns
+- No circular dependencies introduced
+- Module boundaries respected
+
+## Layer 4: Performance Review — WARN
+- [Medium] src/services/report.ts:88 — Sequential awaits
+  in loop could use Promise.all() instead (N+1 pattern)
+- [Low] src/utils/transform.ts:15 — O(n^2) nested loop
+  on array that could grow large
+
+## Overall Score: B (minor fixes needed)
+### Action Items:
+1. Parameterize SQL query in users.ts:42
+2. Update lodash to 4.17.21+
+3. Convert sequential awaits to Promise.all in report.ts</code></pre>
+        </details>
 
         <h3 data-i18n="s14_ci">CI Integration</h3>
         <p data-i18n="s14_ci_desc">Run the full pipeline on every PR in your CI workflow:</p>
-        <pre><code>- name: Full Code Review Pipeline
+        <details>
+          <summary data-i18n="s14_ci_github_toggle">Full GitHub Actions pipeline workflow</summary>
+          <pre><code>name: Claude Review Pipeline
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  claude-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Layer 1 — Quality Check
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p --model haiku "Run ESLint and Prettier
+          on all files changed vs origin/main. Report
+          pass/fail per file." &gt; quality-report.md
+
+      - name: Layer 2 — Security Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Perform OWASP security review on
+          git diff origin/main...HEAD. Run npm audit.
+          Rate findings Critical/High/Medium/Low." \
+          &gt; security-report.md
+
+      - name: Layer 3 — Architecture Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Review architecture of changes in
+          git diff origin/main...HEAD. Check for anti-
+          patterns, circular deps, and coupling issues." \
+          &gt; arch-report.md
+
+      - name: Layer 4 — Performance Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude -p "Analyze performance of changes in
+          git diff origin/main...HEAD. Check complexity,
+          N+1 queries, memory leaks, async patterns." \
+          &gt; perf-report.md
+
+      - name: Compile &amp; Post Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reports = ['quality', 'security', 'arch', 'perf']
+              .map(r =&gt; fs.readFileSync(`${r}-report.md`, 'utf8'));
+            const body = `## Claude Review Pipeline\n\n` +
+              `### Quality\n${reports[0]}\n\n` +
+              `### Security\n${reports[1]}\n\n` +
+              `### Architecture\n${reports[2]}\n\n` +
+              `### Performance\n${reports[3]}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-review-reports
+          path: '*-report.md'</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s14_ci_single_toggle">Quick single-pass CI review</summary>
+          <pre><code>- name: Claude Quick Review
   env:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   run: |
-    claude -p "/full-review" &gt; review-report.md</code></pre>
+    claude -p "/full-review" &gt; review-report.md
+
+# Or without the skill, as a one-liner:
+- name: Claude One-Shot Review
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  run: |
+    claude -p "Review git diff origin/main...HEAD for:
+    1) Lint/format issues  2) Security vulnerabilities
+    3) Architecture anti-patterns  4) Performance issues
+    Rate each area PASS/WARN/FAIL with specifics." \
+    &gt; review-report.md</code></pre>
+        </details>
+
+        <h3 data-i18n="s14_custom">Custom Review Layers</h3>
+        <p data-i18n="s14_custom_desc">You can create domain-specific review layers for your project:</p>
+        <details>
+          <summary data-i18n="s14_custom_a11y_toggle">accessibility-checker agent (web projects)</summary>
+          <pre><code>---
+name: accessibility-checker
+description: Review changes for accessibility compliance
+tools: Read, Grep, Glob
+model: sonnet
+maxTurns: 3
+---
+
+Check changed files for accessibility issues:
+1. Images: all &lt;img&gt; must have alt attributes
+2. Forms: all inputs must have associated labels
+3. ARIA: correct roles, no redundant aria-* attributes
+4. Color: flag hardcoded colors without sufficient contrast
+5. Keyboard: interactive elements must be focusable
+6. Headings: correct hierarchy (no skipped levels)
+Report: WCAG 2.1 AA violations with fix suggestions</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s14_custom_api_toggle">api-contract-reviewer agent (backend projects)</summary>
+          <pre><code>---
+name: api-contract-reviewer
+description: Review API changes for breaking changes
+tools: Read, Grep, Glob, Bash
+model: sonnet
+maxTurns: 5
+---
+
+Check API changes for backwards compatibility:
+1. Find changed route handlers or API definitions
+2. Check for breaking changes:
+   - Removed endpoints
+   - Changed response shapes
+   - New required fields on request body
+   - Changed HTTP methods or status codes
+   - Modified authentication requirements
+3. Verify OpenAPI/Swagger spec is updated (if exists)
+4. Check that API versioning is used for breaking changes
+5. Verify error responses follow consistent format
+Report: breaking vs non-breaking changes list</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s14_custom_db_toggle">migration-reviewer agent (database projects)</summary>
+          <pre><code>---
+name: migration-reviewer
+description: Review database migrations for safety
+tools: Read, Grep, Glob, Bash
+model: sonnet
+maxTurns: 3
+---
+
+Review database migration files for safety:
+1. Find new migration files (git diff --name-only)
+2. For each migration, check:
+   - Is it reversible? (has both up and down)
+   - Does it lock large tables? (ALTER TABLE on big tables)
+   - Does it have a default for NOT NULL columns?
+   - Are indexes added concurrently? (CREATE INDEX CONCURRENTLY)
+   - Does it modify existing data safely?
+3. Check for foreign key risks on large tables
+4. Estimate migration runtime impact
+Report: safe/risky assessment with specific warnings</code></pre>
+        </details>
 
         <div class="callout">
           <strong data-i18n="s14_callout_label">Tip:</strong>
@@ -1994,7 +2788,9 @@ End with an overall score:
 
         <h3 data-i18n="s15_protection">GitHub Branch Protection Rules</h3>
         <p data-i18n="s15_protection_desc">Configure via GitHub Settings &rarr; Branches &rarr; Add rule, or via CLI:</p>
-        <pre><code># Using GitHub CLI to set branch protection
+        <details>
+          <summary data-i18n="s15_protection_gh_toggle">GitHub CLI branch protection setup</summary>
+          <pre><code># Using GitHub CLI to set branch protection
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
   --field "required_status_checks[strict]=true" \
@@ -2003,7 +2799,81 @@ gh api repos/{owner}/{repo}/branches/main/protection \
   --field "enforce_admins=true" \
   --field "required_pull_request_reviews[required_approving_review_count]=1" \
   --field "required_pull_request_reviews[dismiss_stale_reviews]=true" \
-  --field "restrictions=null"</code></pre>
+  --field "restrictions=null"
+
+# Verify it was applied
+gh api repos/{owner}/{repo}/branches/main/protection \
+  | jq '{
+    status_checks: .required_status_checks.contexts,
+    strict: .required_status_checks.strict,
+    reviews: .required_pull_request_reviews.required_approving_review_count,
+    admins_enforced: .enforce_admins.enabled
+  }'</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s15_protection_bb_toggle">Bitbucket branch restrictions</summary>
+          <pre><code># Bitbucket Cloud — set via Settings &gt; Branch restrictions
+# Or use the REST API:
+
+# Prevent direct pushes to main
+curl -X POST \
+  "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo}/branch-restrictions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "push",
+    "pattern": "main",
+    "users": [],
+    "groups": []
+  }'
+
+# Require minimum 1 approval
+curl -X POST \
+  "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo}/branch-restrictions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "require_approvals_to_merge",
+    "pattern": "main",
+    "value": 1
+  }'
+
+# Require passing builds
+curl -X POST \
+  "https://api.bitbucket.org/2.0/repositories/{workspace}/{repo}/branch-restrictions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "require_passing_builds_to_merge",
+    "pattern": "main",
+    "value": 1
+  }'</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s15_protection_ruleset_toggle">GitHub Rulesets (newer alternative)</summary>
+          <pre><code># GitHub Rulesets — more flexible than branch protection
+# Settings &gt; Rules &gt; Rulesets &gt; New ruleset
+
+# Via CLI:
+gh api repos/{owner}/{repo}/rulesets \
+  --method POST \
+  --field "name=main-protection" \
+  --field "target=branch" \
+  --field "enforcement=active" \
+  --field "conditions[ref_name][include][]=refs/heads/main" \
+  --field "rules[][type]=pull_request" \
+  --field "rules[0][parameters][required_approving_review_count]=1" \
+  --field "rules[0][parameters][dismiss_stale_reviews_on_push]=true" \
+  --field "rules[][type]=required_status_checks" \
+  --field "rules[1][parameters][required_status_checks][][context]=claude-review" \
+  --field "rules[1][parameters][required_status_checks[][context]=tests" \
+  --field "rules[1][parameters][strict_required_status_checks_policy]=true"
+
+# Rulesets advantages over branch protection:
+# - Apply to multiple branches with patterns
+# - Can target tags too
+# - Better audit log
+# - Organization-level rulesets cascade down</code></pre>
+        </details>
 
         <h3 data-i18n="s15_rules">Recommended Protection Rules</h3>
         <div class="table-wrap">
@@ -2023,16 +2893,33 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         </div>
 
         <h3 data-i18n="s15_claudemd">CLAUDE.md Git Instructions</h3>
-        <pre><code>## Git Workflow
+        <details>
+          <summary data-i18n="s15_claudemd_toggle">Git workflow rules for CLAUDE.md</summary>
+          <pre><code>## Git Workflow
 - NEVER push directly to main or master
 - ALWAYS create a feature branch: feature/&lt;description&gt;
 - Commit messages: conventional commits (feat:, fix:, chore:)
 - Run all tests before committing
 - One logical change per commit
-- Push and create PR when task is complete</code></pre>
+- Push and create PR when task is complete
 
-        <h3 data-i18n="s15_hook">Hook: Prevent Direct Main Pushes</h3>
-        <pre><code>{
+## Branch Naming
+- feature/&lt;description&gt; — new features
+- fix/&lt;description&gt; — bug fixes
+- chore/&lt;description&gt; — maintenance, deps, config
+- refactor/&lt;description&gt; — code restructuring
+
+## PR Requirements
+- Title: conventional commit format (feat: add login page)
+- Description: what changed and why
+- Link related issues: Closes #123
+- Ensure all CI checks pass before requesting review</code></pre>
+        </details>
+
+        <h3 data-i18n="s15_hook">Hooks: Git Safety Guards</h3>
+        <details>
+          <summary data-i18n="s15_hook_push_toggle">Prevent direct push to main/master</summary>
+          <pre><code>{
   "hooks": {
     "PreToolUse": [
       {
@@ -2047,6 +2934,102 @@ gh api repos/{owner}/{repo}/branches/main/protection \
     ]
   }
 }</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s15_hook_force_toggle">Block force-push on all branches</summary>
+          <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); if echo \"$CMD\" | grep -qE 'git\\s+push.*--force'; then echo 'BLOCKED: Force-push is not allowed. It can overwrite collaborators work.' &gt;&amp;2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s15_hook_test_toggle">Require tests to pass before commit</summary>
+          <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); CMD=$(echo \"$INPUT\" | jq -r '.tool_input.command // empty'); if echo \"$CMD\" | grep -qE 'git\\s+commit'; then npm test 2&gt;&amp;1 | tail -5; if [ $? -ne 0 ]; then echo 'BLOCKED: Tests must pass before committing.' &gt;&amp;2; exit 2; fi; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+        </details>
+
+        <details>
+          <summary data-i18n="s15_hook_conventional_toggle">Enforce conventional commit messages</summary>
+          <pre><code>#!/bin/bash
+# .claude/hooks/conventional-commits.sh
+# Use as a PreToolUse hook on Bash matcher
+
+INPUT=$(cat)
+CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+
+# Check if this is a git commit command
+if echo "$CMD" | grep -qE 'git\s+commit'; then
+  # Extract the commit message
+  MSG=$(echo "$CMD" | grep -oP '(?&lt;=-m\s")[^"]+|(?&lt;=-m\s'"'"')[^'"'"']+')
+
+  if [ -n "$MSG" ]; then
+    # Check conventional commit format
+    if ! echo "$MSG" | grep -qE '^(feat|fix|chore|docs|style|refactor|test|perf|ci|build|revert)(\(.+\))?!?:\s.+'; then
+      echo "BLOCKED: Commit message must follow conventional commits format." &gt;&amp;2
+      echo "Format: type(scope): description" &gt;&amp;2
+      echo "Types: feat, fix, chore, docs, style, refactor, test, perf, ci, build, revert" &gt;&amp;2
+      echo "Example: feat(auth): add login endpoint" &gt;&amp;2
+      exit 2
+    fi
+  fi
+fi
+exit 0</code></pre>
+        </details>
+
+        <h3 data-i18n="s15_worktree">Git Worktree for Parallel Agents</h3>
+        <details>
+          <summary data-i18n="s15_worktree_toggle">Worktree isolation agent example</summary>
+          <pre><code>---
+name: parallel-reviewer
+description: Review code in an isolated git worktree
+tools: Read, Grep, Glob, Bash
+model: sonnet
+isolation: worktree
+maxTurns: 5
+---
+
+You are a code reviewer running in an isolated worktree.
+Your changes won't affect the main working directory.
+
+1. Run `git diff origin/main...HEAD` to see all changes
+2. For each changed file:
+   - Read the full file for context
+   - Check for bugs, security issues, and anti-patterns
+   - Suggest improvements with specific line numbers
+3. Run `npm test` to verify tests pass
+4. Write your review to review-output.md
+
+Because you run in a worktree, you can safely:
+- Modify files to test fixes without affecting main
+- Run destructive test commands
+- Check out different branches for comparison</code></pre>
+        </details>
 
         <h3 data-i18n="s15_dodont">Best Practices</h3>
         <div class="do-dont">
@@ -2277,8 +3260,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s11_env_model_desc: "Override model (e.g., haiku for faster CI)",
         s11_env_ci_desc: "Auto-set by most CI providers, signals non-interactive mode",
         s11_env_auto: "Auto-set",
+        s11_cli: "Claude CLI in CI",
+        s11_cli_desc: 'Common <code>claude -p</code> invocations for CI pipelines:',
+        s11_cli_examples: "Command-line examples",
         s11_github: "GitHub Actions Workflow",
+        s11_github_summary: "PR Review workflow (.github/workflows/claude-review.yml)",
+        s11_github_test_summary: "Test Generation workflow (.github/workflows/claude-tests.yml)",
+        s11_github_lint_summary: "Auto-Fix Lint workflow (.github/workflows/claude-lint.yml)",
         s11_bitbucket: "Bitbucket Pipelines",
+        s11_bitbucket_summary: "PR Review pipeline (bitbucket-pipelines.yml)",
+        s11_bitbucket_security_summary: "Security Scan pipeline (bitbucket-pipelines.yml)",
+        s11_gitlab_summary: "GitLab CI example (.gitlab-ci.yml)",
         s11_patterns: "Common CI Patterns",
         s11_pat_review: "PR Review", s11_pat_review_desc: "Auto-review every pull request for quality, security, and best practices",
         s11_pat_test: "Test Generation", s11_pat_test_desc: "Generate missing unit tests for changed files on every PR",
@@ -2312,9 +3304,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s12_step4_desc: "Tests ensure refactoring doesn't break anything. Claude can confidently improve code knowing tests will catch regressions.",
         s12_claudemd: "CLAUDE.md Testing Instructions",
         s12_claudemd_desc: "Add these to your CLAUDE.md to enforce testing standards:",
+        s12_claudemd_toggle: "CLAUDE.md testing rules example",
+        s12_real_examples: "Real Code Examples",
+        s12_real_jest: "Jest test example (TypeScript)",
+        s12_real_pytest: "pytest example (Python)",
+        s12_real_react: "React component testing (Testing Library)",
         s12_skill: "Test Generation Skill",
+        s12_skill_toggle: "generate-tests SKILL.md",
+        s12_skill_coverage_toggle: "coverage-check SKILL.md",
         s12_agent: "Test Review Subagent",
         s12_agent_title: "test-reviewer agent definition",
+        s12_agent_regression_title: "regression-guard agent definition",
         s12_examples: "Example Test Prompts",
         s12_ex_gen: "Generate Tests", s12_ex_gen_desc: "Write comprehensive tests for src/utils/parser.ts covering all edge cases",
         s12_ex_tdd: "TDD Approach", s12_ex_tdd_desc: "Write failing tests for a user authentication feature, then implement it",
@@ -2326,10 +3326,19 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s13_desc: "Make Claude evaluate and improve its own output. By combining CLAUDE.md instructions, hooks, and subagents, you can create a system where Claude automatically validates, reviews, and refines its work.",
         s13_loop: "The Recursive Improvement Loop",
         s13_claudemd: "CLAUDE.md Self-Checking Instructions",
+        s13_claudemd_toggle: "Self-evaluation rules for CLAUDE.md",
+        s13_claudemd_advanced_toggle: "Advanced CLAUDE.md with iterative refinement",
         s13_hooks: "Hooks for Automatic Validation",
         s13_hooks_desc: "Use PostToolUse hooks to auto-validate after every edit, and Stop hooks to run final checks:",
+        s13_hooks_lint_toggle: "Auto-lint after every file edit",
+        s13_hooks_typecheck_toggle: "TypeScript type-check after edits",
+        s13_hooks_stop_toggle: "Run tests on session stop",
+        s13_hooks_python_toggle: "Python validation hooks (pytest + mypy)",
         s13_subagent: "Self-Review Subagent",
         s13_subagent_title: "self-reviewer agent definition",
+        s13_subagent_optimizer_title: "recursive-optimizer agent definition",
+        s13_skill: "Self-Review Skill",
+        s13_skill_toggle: "self-review SKILL.md",
         s13_patterns: "Self-Evaluation Patterns",
         s13_pat_verify: "Verify Before Done", s13_pat_verify_desc: 'Add "NEVER say done without running tests" to CLAUDE.md',
         s13_pat_lint: "Auto-Lint on Edit", s13_pat_lint_desc: "PostToolUse hook runs linter after every file edit automatically",
@@ -2353,8 +3362,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s14_layer4: "Layer 4: Performance Review", s14_layer4_title: "perf-analyzer agent definition",
         s14_pipeline: "Chaining the Pipeline",
         s14_pipeline_desc: "Create a skill that runs all four layers and compiles a final report:",
+        s14_pipeline_skill_toggle: "full-review SKILL.md",
+        s14_pipeline_output_toggle: "Example pipeline output",
         s14_ci: "CI Integration",
         s14_ci_desc: "Run the full pipeline on every PR in your CI workflow:",
+        s14_ci_github_toggle: "Full GitHub Actions pipeline workflow",
+        s14_ci_single_toggle: "Quick single-pass CI review",
+        s14_custom: "Custom Review Layers",
+        s14_custom_desc: "You can create domain-specific review layers for your project:",
+        s14_custom_a11y_toggle: "accessibility-checker agent (web projects)",
+        s14_custom_api_toggle: "api-contract-reviewer agent (backend projects)",
+        s14_custom_db_toggle: "migration-reviewer agent (database projects)",
         s14_callout_label: "Tip:",
         s14_callout_text: 'Use <code>haiku</code> for Layer 1 (fast, cheap linting) and <code>sonnet</code> for Layers 2-4 (requires deeper reasoning). This balances cost and quality across the pipeline.',
         // Section 15: Branch Protection
@@ -2374,6 +3392,9 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s15_wf6_title: "6. Merge after checks pass", s15_wf6_desc: "All status checks green — merge to main with confidence",
         s15_protection: "GitHub Branch Protection Rules",
         s15_protection_desc: "Configure via GitHub Settings &rarr; Branches &rarr; Add rule, or via CLI:",
+        s15_protection_gh_toggle: "GitHub CLI branch protection setup",
+        s15_protection_bb_toggle: "Bitbucket branch restrictions",
+        s15_protection_ruleset_toggle: "GitHub Rulesets (newer alternative)",
         s15_rules: "Recommended Protection Rules",
         th_rule: "Rule", th_setting: "Setting", th_why: "Why",
         s15_r1_rule: "Require PR before merge", s15_r1_set: "Enabled", s15_r1_why: "Prevents direct pushes to main",
@@ -2383,7 +3404,14 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s15_r5_rule: "Require approvals", s15_r5_set: "1+", s15_r5_why: "Human must approve alongside Claude",
         s15_r6_rule: "Enforce for admins", s15_r6_set: "Enabled", s15_r6_why: "No bypass, even for repository admins",
         s15_claudemd: "CLAUDE.md Git Instructions",
-        s15_hook: "Hook: Prevent Direct Main Pushes",
+        s15_claudemd_toggle: "Git workflow rules for CLAUDE.md",
+        s15_hook: "Hooks: Git Safety Guards",
+        s15_hook_push_toggle: "Prevent direct push to main/master",
+        s15_hook_force_toggle: "Block force-push on all branches",
+        s15_hook_test_toggle: "Require tests to pass before commit",
+        s15_hook_conventional_toggle: "Enforce conventional commit messages",
+        s15_worktree: "Git Worktree for Parallel Agents",
+        s15_worktree_toggle: "Worktree isolation agent example",
         s15_dodont: "Best Practices",
         s15_do_1: "Create feature branches for every task",
         s15_do_2: "Use conventional commit messages",
@@ -2591,8 +3619,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s11_env_model_desc: "Zamena modela (npr. haiku za brži CI)",
         s11_env_ci_desc: "Automatski postavljeno od strane većine CI provajdera, signalizira neinteraktivni režim",
         s11_env_auto: "Automatski",
+        s11_cli: "Claude CLI u CI-ju",
+        s11_cli_desc: 'Uobičajene <code>claude -p</code> komande za CI pipeline-e:',
+        s11_cli_examples: "Primeri komandne linije",
         s11_github: "GitHub Actions radni tok",
+        s11_github_summary: "Radni tok za pregled PR-a (.github/workflows/claude-review.yml)",
+        s11_github_test_summary: "Radni tok za generisanje testova (.github/workflows/claude-tests.yml)",
+        s11_github_lint_summary: "Radni tok za automatsko popravljanje lint-a (.github/workflows/claude-lint.yml)",
         s11_bitbucket: "Bitbucket Pipelines",
+        s11_bitbucket_summary: "Pipeline za pregled PR-a (bitbucket-pipelines.yml)",
+        s11_bitbucket_security_summary: "Pipeline za bezbednosno skeniranje (bitbucket-pipelines.yml)",
+        s11_gitlab_summary: "GitLab CI primer (.gitlab-ci.yml)",
         s11_patterns: "Uobičajeni CI obrasci",
         s11_pat_review: "Pregled PR-a", s11_pat_review_desc: "Automatski pregledajte svaki pull request za kvalitet, bezbednost i najbolje prakse",
         s11_pat_test: "Generisanje testova", s11_pat_test_desc: "Generišite nedostajuće unit testove za izmenjene fajlove na svakom PR-u",
@@ -2626,9 +3663,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s12_step4_desc: "Testovi osiguravaju da refaktorisanje ne kvari ništa. Claude može samouvereno poboljšati kod znajući da će testovi uhvatiti regresije.",
         s12_claudemd: "CLAUDE.md uputstva za testiranje",
         s12_claudemd_desc: "Dodajte ova pravila u CLAUDE.md za primenu standarda testiranja:",
+        s12_claudemd_toggle: "Primer pravila testiranja za CLAUDE.md",
+        s12_real_examples: "Primeri pravog koda",
+        s12_real_jest: "Jest test primer (TypeScript)",
+        s12_real_pytest: "pytest primer (Python)",
+        s12_real_react: "Testiranje React komponenti (Testing Library)",
         s12_skill: "Veština za generisanje testova",
+        s12_skill_toggle: "generate-tests SKILL.md",
+        s12_skill_coverage_toggle: "coverage-check SKILL.md",
         s12_agent: "Podagent za pregled testova",
         s12_agent_title: "definicija test-reviewer agenta",
+        s12_agent_regression_title: "definicija regression-guard agenta",
         s12_examples: "Primeri prompt-ova za testove",
         s12_ex_gen: "Generisanje testova", s12_ex_gen_desc: "Napišite sveobuhvatne testove za src/utils/parser.ts pokrivajući sve granične slučajeve",
         s12_ex_tdd: "TDD pristup", s12_ex_tdd_desc: "Napišite testove koji padaju za funkcionalnost autentifikacije korisnika, zatim je implementirajte",
@@ -2640,10 +3685,19 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s13_desc: "Naterajte Claude-a da evaluira i poboljša sopstveni izlaz. Kombinovanjem CLAUDE.md uputstava, kukica i podagenata, možete kreirati sistem gde Claude automatski validira, pregleda i usavršava svoj rad.",
         s13_loop: "Petlja rekurzivnog poboljšanja",
         s13_claudemd: "CLAUDE.md uputstva za samoproveru",
+        s13_claudemd_toggle: "Pravila samoevaluacije za CLAUDE.md",
+        s13_claudemd_advanced_toggle: "Napredni CLAUDE.md sa iterativnim usavršavanjem",
         s13_hooks: "Kukice za automatsku validaciju",
         s13_hooks_desc: "Koristite PostToolUse kukice za automatsku validaciju nakon svake izmene, i Stop kukice za finalne provere:",
+        s13_hooks_lint_toggle: "Auto-lint nakon svake izmene fajla",
+        s13_hooks_typecheck_toggle: "TypeScript provera tipova nakon izmena",
+        s13_hooks_stop_toggle: "Pokretanje testova pri zaustavljanju sesije",
+        s13_hooks_python_toggle: "Python kukice za validaciju (pytest + mypy)",
         s13_subagent: "Podagent za samoproveru",
         s13_subagent_title: "definicija self-reviewer agenta",
+        s13_subagent_optimizer_title: "definicija recursive-optimizer agenta",
+        s13_skill: "Veština za samoproveru",
+        s13_skill_toggle: "self-review SKILL.md",
         s13_patterns: "Obrasci samoevaluacije",
         s13_pat_verify: "Verifikuj pre završetka", s13_pat_verify_desc: 'Dodajte "NIKADA ne recite da ste završili bez pokretanja testova" u CLAUDE.md',
         s13_pat_lint: "Auto-lint pri izmeni", s13_pat_lint_desc: "PostToolUse kukica pokreće linter nakon svake izmene fajla automatski",
@@ -2667,8 +3721,17 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s14_layer4: "Sloj 4: Pregled performansi", s14_layer4_title: "definicija perf-analyzer agenta",
         s14_pipeline: "Ulančavanje pipeline-a",
         s14_pipeline_desc: "Kreirajte veštinu koja pokreće sva četiri sloja i kompilira finalni izveštaj:",
+        s14_pipeline_skill_toggle: "full-review SKILL.md",
+        s14_pipeline_output_toggle: "Primer izlaza pipeline-a",
         s14_ci: "CI integracija",
         s14_ci_desc: "Pokrenite ceo pipeline na svakom PR-u u vašem CI radnom toku:",
+        s14_ci_github_toggle: "Potpuni GitHub Actions pipeline radni tok",
+        s14_ci_single_toggle: "Brzi jednoprolazni CI pregled",
+        s14_custom: "Prilagođeni slojevi pregleda",
+        s14_custom_desc: "Možete kreirati slojeve pregleda specifične za vaš projekat:",
+        s14_custom_a11y_toggle: "accessibility-checker agent (web projekti)",
+        s14_custom_api_toggle: "api-contract-reviewer agent (backend projekti)",
+        s14_custom_db_toggle: "migration-reviewer agent (projekti sa bazom podataka)",
         s14_callout_label: "Savet:",
         s14_callout_text: 'Koristite <code>haiku</code> za Sloj 1 (brzo, jeftino lintovanje) i <code>sonnet</code> za Slojeve 2-4 (zahteva dublje rezonovanje). Ovo balansira cenu i kvalitet kroz pipeline.',
         // Sekcija 15: Zaštita grana
@@ -2688,6 +3751,9 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s15_wf6_title: "6. Spajanje nakon prolaska provera", s15_wf6_desc: "Sve statusne provere zelene — spajanje na main sa poverenjem",
         s15_protection: "GitHub pravila zaštite grana",
         s15_protection_desc: "Konfigurišite preko GitHub Podešavanja &rarr; Grane &rarr; Dodaj pravilo, ili preko CLI-ja:",
+        s15_protection_gh_toggle: "GitHub CLI podešavanje zaštite grana",
+        s15_protection_bb_toggle: "Bitbucket ograničenja grana",
+        s15_protection_ruleset_toggle: "GitHub Rulesets (novija alternativa)",
         s15_rules: "Preporučena pravila zaštite",
         th_rule: "Pravilo", th_setting: "Podešavanje", th_why: "Zašto",
         s15_r1_rule: "Zahtevaj PR pre spajanja", s15_r1_set: "Uključeno", s15_r1_why: "Sprečava direktno guranje na main",
@@ -2697,7 +3763,14 @@ gh api repos/{owner}/{repo}/branches/main/protection \
         s15_r5_rule: "Zahtevanje odobrenja", s15_r5_set: "1+", s15_r5_why: "Čovek mora odobriti pored Claude-a",
         s15_r6_rule: "Primena na admine", s15_r6_set: "Uključeno", s15_r6_why: "Bez zaobilaženja, čak i za admine repozitorijuma",
         s15_claudemd: "CLAUDE.md Git uputstva",
-        s15_hook: "Kukica: Sprečavanje direktnog guranja na main",
+        s15_claudemd_toggle: "Pravila git radnog toka za CLAUDE.md",
+        s15_hook: "Kukice: Sigurnosni čuvari za Git",
+        s15_hook_push_toggle: "Sprečavanje direktnog guranja na main/master",
+        s15_hook_force_toggle: "Blokiranje force-push na svim granama",
+        s15_hook_test_toggle: "Zahtevanje prolaska testova pre komita",
+        s15_hook_conventional_toggle: "Primena konvencionalnih poruka komitova",
+        s15_worktree: "Git Worktree za paralelne agente",
+        s15_worktree_toggle: "Primer agenta sa izolacijom u worktree-u",
         s15_dodont: "Najbolje prakse",
         s15_do_1: "Kreirajte feature grane za svaki zadatak",
         s15_do_2: "Koristite konvencionalne poruke komitova",
